@@ -3692,8 +3692,8 @@ function UsuarioModal({ rubros, planes, onClose, onCreate }) {
         </div>
 
         <div className="flex gap-3">
-          <Button onClick={onClose} className="w-full bg-slate-800 text-white">Cancelar</Button>
-          <Button onClick={create} className="w-full bg-blue-500 text-black">Crear usuario</Button>
+          <Button type="button" onClick={onClose} className="w-full bg-slate-800 text-white">Cancelar</Button>
+          <Button type="button" onClick={create} className="w-full bg-blue-500 text-black">Crear usuario</Button>
         </div>
       </div>
     </ModalShell>
