@@ -214,6 +214,10 @@ const clientesDemo = [
 
 function parseEsDate(dateText) {
   if (!dateText || typeof dateText !== "string") return null;
+  if (dateText.includes("T")) {
+    const isoDate = new Date(dateText);
+    return Number.isNaN(isoDate.getTime()) ? null : isoDate;
+  }
   const parts = dateText.split("/").map(Number);
   if (parts.length !== 3 || parts.some(Number.isNaN)) return null;
   const [day, month, year] = parts;
@@ -232,6 +236,15 @@ function getDueStatus(dateText) {
   return "Al día";
 }
 
+function userDueValue(user) {
+  return user?.demo && user.demoExpiraOn ? user.demoExpiraOn : user?.renovadoHasta;
+}
+
+function userDueLabel(user) {
+  if (user?.demo && user.demoExpiraOn) return formatDateTime(user.demoExpiraOn);
+  return user?.renovadoHasta || "Sin fecha";
+}
+
 function todayISO() {
   return new Date().toISOString().slice(0, 10);
 }
@@ -244,10 +257,16 @@ function isoToEsDate(value) {
   return `${day}/${month}/${year}`;
 }
 
-function addDaysFromToday(days) {
+function formatDateTime(value) {
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return "Sin fecha";
+  return date.toLocaleString("es-AR", { dateStyle: "short", timeStyle: "short" });
+}
+
+function addMinutesFromNow(minutes) {
   const date = new Date();
-  date.setDate(date.getDate() + Number(days));
-  return date.toLocaleDateString("es-AR");
+  date.setMinutes(date.getMinutes() + Number(minutes));
+  return date.toISOString();
 }
 
 function accessUserFromName(name) {
@@ -260,6 +279,16 @@ function accessUserFromName(name) {
   return `${base}@cremprende.com`;
 }
 
+const adminEmails = ["admin@cremprende.com"];
+
+const demoDurationOptions = [
+  { value: 5, label: "5 minutos" },
+  { value: 60, label: "1 hora" },
+  { value: 300, label: "5 horas" },
+  { value: 720, label: "12 horas" },
+  { value: 1440, label: "24 horas" },
+];
+
 function App() {
   const supportParams = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
   const supportEmpIdFromUrl = supportParams?.get("soporte_emp") || null;
@@ -267,7 +296,7 @@ function App() {
 
   const [isLoggedIn, setIsLoggedIn] = useState(isSupportSession);
   const [loginRole, setLoginRole] = useState(isSupportSession ? "Soporte C&R" : "Super Admin");
-  const [loginEmail, setLoginEmail] = useState(isSupportSession ? "soporte@crsoluciones.com" : "admin@crsoluciones.com");
+  const [loginEmail, setLoginEmail] = useState("admin@cremprende.com");
   const [loginPassword, setLoginPassword] = useState("");
   const [loginError, setLoginError] = useState("");
   const [activePage, setActivePage] = useState(isSupportSession ? "mi-panel" : "dashboard");
@@ -301,7 +330,7 @@ function App() {
     const email = loginEmail.trim().toLowerCase();
     const password = loginPassword.trim();
     const matchedUser = usuarios.find((u) => u.email?.toLowerCase() === email);
-    const isAdminEmail = email.includes("admin") || email.endsWith("@crsoluciones.com");
+    const isAdminEmail = adminEmails.includes(email);
     const detectedRole = matchedUser ? matchedUser.rol || "Dueño" : isAdminEmail ? "Super Admin" : null;
 
     if (!detectedRole) {
@@ -377,7 +406,9 @@ function App() {
   function isDateExpired(dateText) {
     const date = parseEsDate(dateText);
     if (!date) return false;
-    date.setHours(23, 59, 59, 999);
+    if (!String(dateText).includes("T")) {
+      date.setHours(23, 59, 59, 999);
+    }
     return new Date() > date;
   }
 
@@ -587,10 +618,10 @@ function LoginScreen({ email, setEmail, password, setPassword, error, onLogin })
             <p className="text-slate-200 mt-4">Usá tu usuario y contraseña. Luego Supabase detectará automáticamente tu rol y tu emprendimiento.</p>
           </div>
           {error && <div className="rounded-2xl border border-red-400/20 bg-red-400/10 p-3 text-sm font-bold text-red-300">{error}</div>}
-          <InputField icon={<Users />} label="Usuario" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="admin@crsoluciones.com" />
+          <InputField icon={<Users />} label="Usuario" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="admin@cremprende.com" />
           <InputField icon={<KeyRound />} label="Contraseña" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" />
           <div className="rounded-2xl border border-sky-300/20 bg-sky-500/10 p-4 shadow-inner shadow-sky-950/30">
-            <p className="text-sm text-slate-100">Modo prototipo: los usuarios cargados entran con su email y contraseña temporal. Los correos internos de C&R entran como administrador.</p>
+            <p className="text-sm text-slate-100">Modo prototipo: los usuarios cargados entran con su email y contraseña temporal. El correo administrador de C&R entra al panel principal.</p>
           </div>
           <Button type="submit" className="w-full rounded-2xl bg-gradient-to-r from-sky-400 via-cyan-300 to-emerald-300 text-slate-950 hover:scale-[1.01] py-6 font-black shadow-xl shadow-sky-950/30">Ingresar</Button>
         </form>
@@ -784,7 +815,7 @@ function UsuariosPage({ usuarios, emprendimientos, onNewUser, onRenewUser, onCha
                       </div>
                     </td>
                     <td className="py-2.5 px-3 whitespace-nowrap text-center">
-                      <DueBadge status={getDueStatus(u.renovadoHasta)} date={u.renovadoHasta || "Sin fecha"} />
+                      <DueBadge status={getDueStatus(userDueValue(u))} date={userDueLabel(u)} />
                     </td>
                     <td className="py-2.5 px-3">
                       <div className="flex items-center justify-center gap-1 whitespace-nowrap">
@@ -821,7 +852,8 @@ function UsuariosPage({ usuarios, emprendimientos, onNewUser, onRenewUser, onCha
                 <DetailBox icon={<CreditCard />} label="Plan contratado" value={selectedUser.plan || "Básico"} />
                 <DetailBox icon={<ShieldCheck />} label="Demo" value={selectedUser.demo ? "Sí" : "No"} />
                 <DetailBox icon={<DollarSign />} label="Estado de pago" value={selectedUser.estadoPago || "Pendiente"} />
-                <DetailBox icon={<CalendarClock />} label="Fecha vencimiento" value={selectedUser.renovadoHasta || "Sin fecha"} />
+                <DetailBox icon={<CalendarClock />} label="Fecha vencimiento" value={userDueLabel(selectedUser)} />
+                {selectedUser.demo && <DetailBox icon={<Clock />} label="Duración demo" value={selectedUser.demoDuracionLabel || "Demo temporal"} />}
                 <DetailBox icon={<Building2 />} label="Emprendimiento" value={emps.map((e) => e.nombre).join(", ") || "Pendiente de crear"} />
                 <DetailBox icon={<ShieldCheck />} label="Estado" value={selectedUser.estado || "Activo"} />
                 <DetailBox icon={<KeyRound />} label="Cambios de contraseña" value={`${selectedUser.cambiosPassword || 0} cambio(s)`} />
@@ -3287,7 +3319,7 @@ function DemoExpiredModal({ user, onClose }) {
       <div className="p-5 space-y-5">
         <div className="rounded-2xl border border-red-500/20 bg-red-500/10 p-4">
           <p className="text-sm text-slate-100">
-            El demo de <b>{user.nombre}</b> finalizó el <b>{user.demoExpiraOn}</b>. Para seguir usando la plataforma, contactá a los desarrolladores y coordiná el próximo paso.
+            El demo de <b>{user.nombre}</b> finalizó el <b>{formatDateTime(user.demoExpiraOn)}</b>. Para seguir usando la plataforma, contactá a los desarrolladores y coordiná el próximo paso.
           </p>
         </div>
         <div className="rounded-2xl border border-blue-500/20 bg-slate-950/80 p-4 text-sm text-slate-300">
@@ -3595,7 +3627,7 @@ function UsuarioModal({ rubros, planes, onClose, onCreate }) {
     password: "123456",
     vencimiento: todayISO(),
     esDemo: false,
-    demoDuracionDias: 7,
+    demoDuracionMinutos: 5,
   });
   const [manualUser, setManualUser] = useState(false);
   const [error, setError] = useState("");
@@ -3639,12 +3671,13 @@ function UsuarioModal({ rubros, planes, onClose, onCreate }) {
       setError("La contraseña debe tener mínimo 6 caracteres.");
       return;
     }
-    const demoDays = Number(f.demoDuracionDias) || 7;
-    if (f.esDemo && demoDays <= 0) {
+    const demoMinutes = Number(f.demoDuracionMinutos) || 5;
+    if (f.esDemo && demoMinutes <= 0) {
       setError("Ingresá una duración válida para el demo.");
       return;
     }
-    const demoExpiresOn = f.esDemo ? addDaysFromToday(demoDays) : null;
+    const demoDurationLabel = demoDurationOptions.find((option) => option.value === demoMinutes)?.label || `${demoMinutes} minutos`;
+    const demoExpiresOn = f.esDemo ? addMinutesFromNow(demoMinutes) : null;
 
     onCreate({
       id: `USR-${Date.now().toString().slice(-4)}`,
@@ -3661,10 +3694,11 @@ function UsuarioModal({ rubros, planes, onClose, onCreate }) {
       emprendimientoIds: [],
       estado: "Activo",
       demo: f.esDemo,
-      demoDuracionDias: f.esDemo ? demoDays : undefined,
+      demoDuracionMinutos: f.esDemo ? demoMinutes : undefined,
+      demoDuracionLabel: f.esDemo ? demoDurationLabel : undefined,
       demoExpiraOn: f.esDemo ? demoExpiresOn : undefined,
       password: f.password.trim(),
-      renovadoHasta: f.esDemo ? demoExpiresOn : isoToEsDate(f.vencimiento),
+      renovadoHasta: f.esDemo ? formatDateTime(demoExpiresOn) : isoToEsDate(f.vencimiento),
       cambiosPassword: 0,
       renovaciones: 0,
     });
@@ -3692,7 +3726,7 @@ function UsuarioModal({ rubros, planes, onClose, onCreate }) {
             </label>
             <p className="text-xs text-slate-400 mt-2">Si activás demo, el acceso vence automáticamente tras el tiempo elegido y aparecerá un aviso para contactar a los desarrolladores.</p>
             {f.esDemo && (
-              <InputField label="Duración de demo (días)" type="number" min="1" max="90" value={f.demoDuracionDias} onChange={(e) => change("demoDuracionDias", e.target.value)} />
+              <SelectField label="Duración de demo" value={f.demoDuracionMinutos} onChange={(e) => change("demoDuracionMinutos", Number(e.target.value))} options={demoDurationOptions.map((option) => option.value)} labels={Object.fromEntries(demoDurationOptions.map((option) => [option.value, option.label]))} />
             )}
           </div>
           <SelectField label="Rubro" value={f.rubroId} onChange={(e) => change("rubroId", e.target.value)} options={rubros.map((r) => r.id)} labels={Object.fromEntries(rubros.map((r) => [r.id, r.nombre]))} />
