@@ -319,7 +319,7 @@ function App() {
   const [activePage, setActivePage] = useState(isSupportSession ? "mi-panel" : "dashboard");
   const [emprendimientos, setEmprendimientos] = useState(emprendimientosIniciales);
   const [usuarios, setUsuarios] = useState(usuariosIniciales);
-  const [rubros] = useState(rubrosIniciales);
+  const [rubros, setRubros] = useState(rubrosIniciales);
   const [planes] = useState(planesIniciales);
   const [selectedEmpId, setSelectedEmpId] = useState(supportEmpIdFromUrl || "EMP-001");
   const [search, setSearch] = useState("");
@@ -572,7 +572,7 @@ function App() {
           {isAdmin && activePage === "dashboard" && <AdminDashboard emprendimientos={emprendimientos} usuarios={usuarios} rubros={rubros} planes={planes} setActivePage={setActivePage} onRegisterCommercialEvent={registerCommercialEvent} />}
           {isAdmin && activePage === "usuarios" && <UsuariosPage usuarios={usuarios} emprendimientos={emprendimientos} onNewUser={() => setIsUserModalOpen(true)} onRenewUser={renewUser} onChangePassword={changeUserPassword} />}
           {isAdmin && activePage === "emprendimientos" && <EmprendimientosPage emprendimientos={filteredEmprendimientos} search={search} setSearch={setSearch} onNewBusiness={() => setIsBusinessWizardOpen(true)} setSelectedEmpId={setSelectedEmpId} setActivePage={setActivePage} />}
-          {isAdmin && activePage === "rubros" && <RubrosPage rubros={rubros} />}
+          {isAdmin && activePage === "rubros" && <RubrosManagerPage rubros={rubros} modules={modulesBase} onChange={setRubros} />}
           {isAdmin && activePage === "modulos" && <ModulosPage modules={modulesBase} rubros={rubros} />}
           {isAdmin && activePage === "planes" && <PlanesPage planes={planes} />}
           {isAdmin && activePage === "suscripciones" && <SuscripcionesPage emprendimientos={emprendimientos} planes={planes} historialComercial={historialComercial} />}
@@ -1243,7 +1243,7 @@ const rubroCardPalettes = [
   { card: "border-violet-300/40 bg-gradient-to-br from-violet-500 via-fuchsia-600 to-indigo-700 shadow-2xl shadow-violet-950/35", icon: "bg-white/20 text-white border-white/25", badge: "text-white" },
 ];
 
-function EmprendimientosPage({ emprendimientos, search, setSearch, onNewBusiness, setSelectedEmpId, setActivePage }) {
+function EmprendimientosPage({ emprendimientos, search, setSearch, onNewBusiness }) {
   const [selected, setSelected] = useState(null);
   const totalActivos = emprendimientos.filter((e) => e.estado === "Activo").length;
   const pendientes = emprendimientos.filter((e) => e.estadoPago === "Pendiente").length;
@@ -1253,7 +1253,7 @@ function EmprendimientosPage({ emprendimientos, search, setSearch, onNewBusiness
     <div className="space-y-6">
       <PageHeader
         title="Emprendimientos"
-        subtitle="Negocios reales de cada usuario. Acá vinculamos dueño, rubro, actividad, plan, pago y vencimiento."
+        subtitle="Negocios reales de cada usuario. Acá vinculamos responsable, rubro, actividad, plan, pago y vencimiento."
         buttonText="Nuevo emprendimiento"
         onButtonClick={onNewBusiness}
       />
@@ -1267,9 +1267,9 @@ function EmprendimientosPage({ emprendimientos, search, setSearch, onNewBusiness
 
       <Card>
         <CardContent className="p-5 overflow-x-auto">
-          <TableToolbar title="Listado de emprendimientos" search={search} setSearch={setSearch} placeholder="Buscar por nombre, dueño, rubro o actividad..." />
+          <TableToolbar title="Listado de emprendimientos" search={search} setSearch={setSearch} placeholder="Buscar por nombre, usuario, rubro o actividad..." />
           <table className="w-full text-sm min-w-[980px]">
-            <TableHead headers={["ID", "Emprendimiento", "Dueño", "Rubro", "Actividad", "Plan / Pago", "Vencimiento", "Estado", "Acción"]} />
+            <TableHead headers={["ID", "Emprendimiento", "Usuario", "Rubro", "Actividad", "Plan / Pago", "Vencimiento", "Estado"]} />
             <tbody>
               {emprendimientos.map((e) => (
                 <tr key={e.id} onClick={() => setSelected(e)} className="border-b border-slate-800 hover:bg-blue-500/5 cursor-pointer transition">
@@ -1289,9 +1289,6 @@ function EmprendimientosPage({ emprendimientos, search, setSearch, onNewBusiness
                   </td>
                   <td className="py-3 pr-4 text-center whitespace-nowrap">{e.vencimiento}</td>
                   <td className="py-3 pr-4"><StatusBadge label={e.estado} tone="success" /></td>
-                  <td className="py-3 pr-4" onClick={(ev) => ev.stopPropagation()}>
-                    <Button onClick={() => { setSelectedEmpId(e.id); setActivePage("vista-cliente"); }} className="rounded-xl bg-gradient-to-r from-sky-400 to-blue-500 text-slate-950 px-3 py-2 text-xs shadow-lg shadow-blue-950/30 hover:from-sky-300 hover:to-blue-400">Ver panel</Button>
-                  </td>
                 </tr>
               ))}
             </tbody>
@@ -1304,7 +1301,7 @@ function EmprendimientosPage({ emprendimientos, search, setSearch, onNewBusiness
           <div className="p-5 space-y-5">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <InfoItem label="ID" value={selected.id} />
-              <InfoItem label="Dueño / responsable" value={selected.owner} />
+              <InfoItem label="Usuario / responsable" value={selected.owner} />
               <InfoItem label="Rubro" value={selected.rubro} highlight />
               <InfoItem label="Actividad" value={selected.actividad || "Sin actividad"} />
               <InfoItem label="Plan contratado" value={selected.plan} highlight />
@@ -1322,7 +1319,6 @@ function EmprendimientosPage({ emprendimientos, search, setSearch, onNewBusiness
             </Card>
             <div className="flex gap-3">
               <Button onClick={() => setSelected(null)} className="w-full bg-slate-800 text-white">Cerrar</Button>
-              <Button onClick={() => { setSelectedEmpId(selected.id); setActivePage("vista-cliente"); setSelected(null); }} className="w-full bg-gradient-to-r from-sky-400 to-blue-500 text-slate-950 shadow-lg shadow-blue-950/30">Entrar al panel</Button>
             </div>
           </div>
         </ModalShell>
@@ -1385,6 +1381,203 @@ function RubrosPage({ rubros }) {
     </div>
   );
 }
+
+function RubrosManagerPage({ rubros, modules, onChange }) {
+  const emptyRubro = {
+    nombre: "",
+    enfoque: "",
+    etiquetaInsumos: "Insumos",
+    actividades: [],
+    ejemplos: "",
+    modulos: ["Dashboard", "Productos", "Clientes", "Finanzas", "Configuración"],
+  };
+  const [expandedRubroId, setExpandedRubroId] = useState(null);
+  const [newActivity, setNewActivity] = useState({});
+  const [isNewOpen, setIsNewOpen] = useState(false);
+  const [newRubro, setNewRubro] = useState(emptyRubro);
+
+  function rubroIdFromName(name) {
+    const base = (name || "nuevo")
+      .toUpperCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^A-Z0-9]+/g, "-")
+      .replace(/^-|-$/g, "")
+      .slice(0, 10) || "NUEVO";
+    return `RUB-${base}`;
+  }
+
+  function updateRubro(rubroId, changes) {
+    onChange((prev) => prev.map((rubro) => rubro.id === rubroId ? { ...rubro, ...changes } : rubro));
+  }
+
+  function addActivity(rubroId) {
+    const value = (newActivity[rubroId] || "").trim();
+    if (!value) return;
+    onChange((prev) => prev.map((rubro) => rubro.id === rubroId ? { ...rubro, actividades: [...(rubro.actividades || []), value] } : rubro));
+    setNewActivity((prev) => ({ ...prev, [rubroId]: "" }));
+  }
+
+  function removeActivity(rubroId, activity) {
+    onChange((prev) => prev.map((rubro) => rubro.id === rubroId ? { ...rubro, actividades: (rubro.actividades || []).filter((item) => item !== activity) } : rubro));
+  }
+
+  function toggleModule(rubroId, moduleName) {
+    onChange((prev) =>
+      prev.map((rubro) => {
+        if (rubro.id !== rubroId) return rubro;
+        const current = rubro.modulos || [];
+        const modulos = current.includes(moduleName) ? current.filter((item) => item !== moduleName) : [...current, moduleName];
+        return { ...rubro, modulos };
+      })
+    );
+  }
+
+  function toggleNewModule(moduleName) {
+    setNewRubro((prev) => {
+      const current = prev.modulos || [];
+      const modulos = current.includes(moduleName) ? current.filter((item) => item !== moduleName) : [...current, moduleName];
+      return { ...prev, modulos };
+    });
+  }
+
+  function addNewRubro() {
+    const nombre = newRubro.nombre.trim();
+    if (!nombre) return;
+    const next = {
+      ...newRubro,
+      id: rubroIdFromName(nombre),
+      nombre,
+      enfoque: newRubro.enfoque.trim() || "Nuevo rubro configurable.",
+      actividades: (newRubro.actividades || []).filter(Boolean),
+      ejemplos: newRubro.ejemplos.trim() || "Ejemplos pendientes de cargar.",
+      modulos: newRubro.modulos?.length ? newRubro.modulos : emptyRubro.modulos,
+    };
+    onChange((prev) => [next, ...prev]);
+    setExpandedRubroId(next.id);
+    setNewRubro(emptyRubro);
+    setIsNewOpen(false);
+  }
+
+  return (
+    <div className="space-y-6">
+      <PageHeader title="Rubros" subtitle="Los rubros definen cómo trabaja cada emprendimiento: actividades, subrubros y módulos activos." buttonText="Nuevo rubro" onButtonClick={() => setIsNewOpen(true)} />
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <StatCard icon={<Boxes />} label="Rubros activos" value={rubros.length} className={statColorStyles.sky.card} iconClassName={statColorStyles.sky.icon} />
+        <StatCard icon={<ClipboardList />} label="Actividades base" value={rubros.reduce((acc, r) => acc + (r.actividades?.length || 0), 0)} className={statColorStyles.emerald.card} iconClassName={statColorStyles.emerald.icon} />
+        <StatCard icon={<Package />} label="Módulos conectados" value="Editables" className={statColorStyles.amber.card} iconClassName={statColorStyles.amber.icon} />
+      </div>
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+        {rubros.map((r, index) => {
+          const palette = rubroCardPalettes[index % rubroCardPalettes.length];
+          const isExpanded = expandedRubroId === r.id;
+          return (
+            <ColorCard key={r.id} className={`${palette.card} transition duration-300 ${isExpanded ? "xl:col-span-2 xl:row-span-2" : "hover:-translate-y-1"}`}>
+              <CardContent className="p-5 space-y-4">
+                <button type="button" onClick={() => setExpandedRubroId(isExpanded ? null : r.id)} className="w-full text-left">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex gap-3">
+                      <div className={`mt-1 flex h-12 w-12 items-center justify-center rounded-2xl border ${palette.icon}`}>
+                        <Boxes className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <p className={`text-xs font-black uppercase tracking-wide ${palette.badge}`}>{r.id}</p>
+                        <h2 className="text-2xl font-bold text-white mt-1">{r.nombre}</h2>
+                        <p className="text-sm text-slate-200 mt-2">{r.enfoque}</p>
+                      </div>
+                    </div>
+                    <div className={`rounded-2xl border p-3 text-center min-w-28 ${palette.icon}`}>
+                      <p className="text-xs text-slate-300">Módulo</p>
+                      <p className="font-bold text-white">{r.etiquetaInsumos}</p>
+                    </div>
+                  </div>
+                </button>
+
+                <div className="rounded-3xl border border-white/15 bg-slate-950/30 p-4 shadow-inner shadow-black/20 backdrop-blur-sm">
+                  <p className="text-xs text-white/80 font-black uppercase tracking-wide mb-3">Actividades / subrubros</p>
+                  <div className="flex flex-wrap gap-2">{(r.actividades || []).map((a) => <Badge key={a}>{a}</Badge>)}</div>
+                </div>
+
+                <div className="rounded-3xl border border-white/15 bg-slate-950/30 p-4 shadow-inner shadow-black/20 backdrop-blur-sm">
+                  <p className="text-xs text-white/80 font-black uppercase tracking-wide mb-3">Módulos sugeridos</p>
+                  <div className="flex flex-wrap gap-2">{(r.modulos || []).map((m) => <Badge key={m}>{m}</Badge>)}</div>
+                </div>
+
+                {isExpanded && (
+                  <div className="space-y-4 rounded-3xl border border-white/15 bg-slate-950/50 p-5">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <InputField label="Nombre del rubro" value={r.nombre} onChange={(e) => updateRubro(r.id, { nombre: e.target.value })} />
+                      <InputField label="Etiqueta de insumos" value={r.etiquetaInsumos} onChange={(e) => updateRubro(r.id, { etiquetaInsumos: e.target.value })} />
+                      <InputField label="Enfoque" value={r.enfoque} onChange={(e) => updateRubro(r.id, { enfoque: e.target.value })} />
+                      <InputField label="Ejemplos" value={r.ejemplos} onChange={(e) => updateRubro(r.id, { ejemplos: e.target.value })} />
+                    </div>
+
+                    <div>
+                      <p className="text-xs text-sky-300 font-black uppercase tracking-wide mb-3">Agregar actividad / subrubro</p>
+                      <div className="flex flex-col md:flex-row gap-2">
+                        <InputField label="Nueva actividad" value={newActivity[r.id] || ""} onChange={(e) => setNewActivity((prev) => ({ ...prev, [r.id]: e.target.value }))} placeholder="Ej: Sublimación" />
+                        <Button type="button" onClick={() => addActivity(r.id)} className="bg-blue-500 text-black md:self-end">Agregar</Button>
+                      </div>
+                      <div className="flex flex-wrap gap-2 mt-3">
+                        {(r.actividades || []).map((activity) => (
+                          <button key={activity} type="button" onClick={() => removeActivity(r.id, activity)} className="rounded-full bg-blue-500/10 border border-blue-400/20 px-3 py-1 text-xs font-bold text-sky-200 hover:bg-red-500/15 hover:text-red-200">
+                            {activity} x
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <p className="text-xs text-sky-300 font-black uppercase tracking-wide mb-3">Módulos activos</p>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                        {modules.map((moduleName) => (
+                          <label key={moduleName} className="flex items-center gap-2 rounded-2xl border border-white/10 bg-slate-900/70 px-3 py-2 text-sm font-bold text-slate-100">
+                            <input type="checkbox" checked={(r.modulos || []).includes(moduleName)} onChange={() => toggleModule(r.id, moduleName)} className="h-4 w-4 rounded border-slate-600 bg-slate-900" />
+                            {moduleName}
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </ColorCard>
+          );
+        })}
+      </div>
+
+      {isNewOpen && (
+        <ModalShell eyebrow="Nuevo rubro" title="Crear rubro" onClose={() => setIsNewOpen(false)}>
+          <div className="p-5 space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <InputField label="Nombre" value={newRubro.nombre} onChange={(e) => setNewRubro((prev) => ({ ...prev, nombre: e.target.value }))} placeholder="Ej: Servicios digitales" />
+              <InputField label="Etiqueta de insumos" value={newRubro.etiquetaInsumos} onChange={(e) => setNewRubro((prev) => ({ ...prev, etiquetaInsumos: e.target.value }))} placeholder="Ej: Recursos" />
+              <InputField label="Enfoque" value={newRubro.enfoque} onChange={(e) => setNewRubro((prev) => ({ ...prev, enfoque: e.target.value }))} placeholder="Breve descripción del rubro" />
+              <InputField label="Ejemplos" value={newRubro.ejemplos} onChange={(e) => setNewRubro((prev) => ({ ...prev, ejemplos: e.target.value }))} placeholder="Ej: diseño, redes, impresiones" />
+            </div>
+            <InputField label="Actividades iniciales separadas por coma" value={(newRubro.actividades || []).join(", ")} onChange={(e) => setNewRubro((prev) => ({ ...prev, actividades: e.target.value.split(",").map((item) => item.trim()).filter(Boolean) }))} placeholder="Ej: Diseño, Redes sociales, Branding" />
+            <div>
+              <p className="text-xs text-sky-300 font-black uppercase tracking-wide mb-3">Módulos activos</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {modules.map((moduleName) => (
+                  <label key={moduleName} className="flex items-center gap-2 rounded-2xl border border-white/10 bg-slate-950 px-3 py-2 text-sm font-bold text-slate-100">
+                    <input type="checkbox" checked={(newRubro.modulos || []).includes(moduleName)} onChange={() => toggleNewModule(moduleName)} className="h-4 w-4 rounded border-slate-600 bg-slate-900" />
+                    {moduleName}
+                  </label>
+                ))}
+              </div>
+            </div>
+            <div className="flex gap-3">
+              <Button type="button" onClick={() => setIsNewOpen(false)} className="w-full bg-slate-800 text-white">Cancelar</Button>
+              <Button type="button" onClick={addNewRubro} className="w-full bg-blue-500 text-black">Crear rubro</Button>
+            </div>
+          </div>
+        </ModalShell>
+      )}
+    </div>
+  );
+}
+
 function ModulosPage({ modules, rubros }) {
   const [expandedModule, setExpandedModule] = useState("Dashboard");
 
