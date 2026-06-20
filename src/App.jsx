@@ -665,12 +665,6 @@ function LoginScreen({ email, setEmail, password, setPassword, error, onLogin })
       className: "from-violet-500 via-fuchsia-600 to-pink-500 shadow-fuchsia-950/40",
     },
     {
-      icon: <MessageCircle />,
-      label: "Soporte C&R",
-      value: "Mensajes internos y ayuda guiada",
-      className: "from-emerald-400 via-teal-500 to-cyan-500 shadow-emerald-950/40",
-    },
-    {
       icon: <CreditCard />,
       label: "Planes claros",
       value: "Básico, Pro y Elite",
@@ -685,15 +679,14 @@ function LoginScreen({ email, setEmail, password, setPassword, error, onLogin })
       <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-[1.15fr_.85fr] rounded-[2.2rem] overflow-hidden glass-panel relative z-10 shadow-2xl shadow-blue-950/40 border border-white/10">
         <div className="p-7 md:p-10 bg-gradient-to-br from-slate-950/92 via-black/72 to-slate-900/72">
           <div className="flex justify-center">
-            <div className="inline-flex rounded-[1.5rem] bg-white/95 px-5 py-3 shadow-2xl shadow-blue-600/25 border border-white/40">
-              <img src="/logo-cr.png" alt="C&R Emprende" className="h-36 w-auto object-contain" />
+            <div className="inline-flex rounded-[1.5rem] bg-white/95 px-4 py-2 shadow-2xl shadow-blue-600/25 border border-white/40">
+              <img src="/logo-cr.png" alt="C&R Emprende" className="h-44 w-auto object-contain" />
             </div>
           </div>
 
           <div className="mt-8 max-w-2xl">
             <p className="text-sm text-sky-300 font-black uppercase tracking-[0.24em]">C&R Emprende</p>
             <h1 className="text-4xl md:text-5xl font-black mt-4 leading-tight">Gestión simple para emprendedores reales</h1>
-            <p className="text-slate-100 mt-4 leading-relaxed text-base md:text-lg">Una plataforma para ordenar stock, insumos, costos, clientes, presupuestos, finanzas y mensajes con C&R desde un solo lugar.</p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-8">
@@ -714,9 +707,7 @@ function LoginScreen({ email, setEmail, password, setPassword, error, onLogin })
             <h2 className="text-3xl font-black text-white">Ingresar</h2>
             <div className="mt-4 rounded-3xl border border-white/10 bg-white/8 p-4 shadow-inner shadow-slate-950/30">
               <p className="text-sm font-bold uppercase tracking-[0.16em] text-cyan-200">Tu logo, tu negocio, tu control</p>
-              <p className="text-slate-100 mt-2 leading-relaxed">C&R Emprende te ayuda a ordenar tu gestión, conocer tus costos y vender con más claridad desde un solo panel.</p>
             </div>
-            <p className="text-slate-200 mt-4">Usá tu usuario y contraseña. Luego Supabase detectará automáticamente tu rol y tu emprendimiento.</p>
           </div>
           {error && <div className="rounded-2xl border border-red-400/20 bg-red-400/10 p-3 text-sm font-bold text-red-300">{error}</div>}
           <InputField icon={<Users />} label="Usuario" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="admin@cremprende.com" />
