@@ -263,6 +263,21 @@ function formatDateTime(value) {
   return date.toLocaleString("es-AR", { dateStyle: "short", timeStyle: "short" });
 }
 
+function getRemainingMs(dateText) {
+  const date = parseEsDate(dateText);
+  if (!date) return 0;
+  return Math.max(0, date.getTime() - Date.now());
+}
+
+function formatRemaining(ms) {
+  const totalSeconds = Math.max(0, Math.ceil(ms / 1000));
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  if (hours > 0) return `${hours}h ${String(minutes).padStart(2, "0")}m ${String(seconds).padStart(2, "0")}s`;
+  return `${minutes}m ${String(seconds).padStart(2, "0")}s`;
+}
+
 function addMinutesFromNow(minutes) {
   const date = new Date();
   date.setMinutes(date.getMinutes() + Number(minutes));
@@ -299,6 +314,8 @@ function App() {
   const [loginEmail, setLoginEmail] = useState("admin@cremprende.com");
   const [loginPassword, setLoginPassword] = useState("");
   const [loginError, setLoginError] = useState("");
+  const [currentUser, setCurrentUser] = useState(null);
+  const [demoRemainingMs, setDemoRemainingMs] = useState(0);
   const [activePage, setActivePage] = useState(isSupportSession ? "mi-panel" : "dashboard");
   const [emprendimientos, setEmprendimientos] = useState(emprendimientosIniciales);
   const [usuarios, setUsuarios] = useState(usuariosIniciales);
@@ -325,6 +342,29 @@ function App() {
     return emprendimientos.filter((e) => [e.id, e.nombre, e.rubro, e.actividad, e.owner, e.plan, e.estado, e.estadoPago].join(" ").toLowerCase().includes(term));
   }, [emprendimientos, search]);
 
+  useEffect(() => {
+    if (!isLoggedIn || isAdmin || !currentUser?.demo || !currentUser.demoExpiraOn) {
+      setDemoRemainingMs(0);
+      return undefined;
+    }
+
+    function updateDemoTimer() {
+      const remaining = getRemainingMs(currentUser.demoExpiraOn);
+      setDemoRemainingMs(remaining);
+      if (remaining <= 0) {
+        setExpiredDemoUser(currentUser);
+        setShowDemoExpired(true);
+        setShowWelcome(false);
+        setIsLoggedIn(false);
+        setActivePage("mi-panel");
+      }
+    }
+
+    updateDemoTimer();
+    const interval = window.setInterval(updateDemoTimer, 1000);
+    return () => window.clearInterval(interval);
+  }, [currentUser, isAdmin, isLoggedIn]);
+
   function handleLogin(e) {
     e.preventDefault();
     const email = loginEmail.trim().toLowerCase();
@@ -344,12 +384,23 @@ function App() {
     }
 
     const demoExpired = matchedUser?.demo && matchedUser.demoExpiraOn && isDateExpired(matchedUser.demoExpiraOn);
+    if (demoExpired) {
+      setCurrentUser(null);
+      setExpiredDemoUser(matchedUser);
+      setShowDemoExpired(true);
+      setIsLoggedIn(false);
+      setLoginError("");
+      return;
+    }
+
     setLoginError("");
+    setCurrentUser(matchedUser || null);
+    setDemoRemainingMs(matchedUser?.demo ? getRemainingMs(matchedUser.demoExpiraOn) : 0);
     setLoginRole(detectedRole);
     setIsLoggedIn(true);
-    setShowWelcome(!demoExpired && detectedRole !== "Super Admin");
-    setShowDemoExpired(demoExpired);
-    setExpiredDemoUser(demoExpired ? matchedUser : null);
+    setShowWelcome(detectedRole !== "Super Admin");
+    setShowDemoExpired(false);
+    setExpiredDemoUser(null);
     setActivePage(detectedRole === "Super Admin" ? "dashboard" : "mi-panel");
     if (matchedUser?.emprendimientoIds?.length) {
       setSelectedEmpId(matchedUser.emprendimientoIds[0]);
@@ -358,7 +409,16 @@ function App() {
 
   function handleLogout() {
     setIsLoggedIn(false);
+    setCurrentUser(null);
+    setDemoRemainingMs(0);
     setActivePage("dashboard");
+  }
+
+  function closeDemoExpired() {
+    setShowDemoExpired(false);
+    setExpiredDemoUser(null);
+    setCurrentUser(null);
+    setDemoRemainingMs(0);
   }
 
   function updateEmprendimientoSettings(updated) {
@@ -436,7 +496,12 @@ function App() {
   }
 
   if (!isLoggedIn) {
-    return <LoginScreen email={loginEmail} setEmail={setLoginEmail} password={loginPassword} setPassword={setLoginPassword} error={loginError} onLogin={handleLogin} />;
+    return (
+      <>
+        <LoginScreen email={loginEmail} setEmail={setLoginEmail} password={loginPassword} setPassword={setLoginPassword} error={loginError} onLogin={handleLogin} />
+        {showDemoExpired && expiredDemoUser && <DemoExpiredModal user={expiredDemoUser} onClose={closeDemoExpired} />}
+      </>
+    );
   }
 
   return (
@@ -478,6 +543,7 @@ function App() {
           <p className="text-sm font-bold text-sky-300">Sesión</p>
           <p className="text-xs text-slate-200 mt-1">Rol: {loginRole}</p>
           {!isAdmin && <p className="text-xs text-slate-300 mt-1">ID: {selectedEmp.id}</p>}
+          {!isAdmin && currentUser?.demo && <DemoCountdownCard remainingMs={demoRemainingMs} expiresOn={currentUser.demoExpiraOn} />}
           <Button onClick={handleLogout} className="w-full mt-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-white">
             <LogOut className="w-4 h-4 mr-2" /> Salir
           </Button>
@@ -486,6 +552,7 @@ function App() {
 
       <main className="flex-1 p-4 md:p-8 overflow-x-hidden">
         <div className="w-full space-y-6">
+          {!isAdmin && currentUser?.demo && <DemoCountdownBanner remainingMs={demoRemainingMs} expiresOn={currentUser.demoExpiraOn} />}
           {isSupportSession && <SupportSessionBanner emp={selectedEmp} />}
           {!isAdmin && !isSupportSession && selectedEmp?.soporteRemoto?.habilitado && <ClientSupportActiveBanner emp={selectedEmp} />}
 
@@ -517,7 +584,7 @@ function App() {
         </div>
       </main>
 
-      {showDemoExpired && !isAdmin && expiredDemoUser && <DemoExpiredModal user={expiredDemoUser} onClose={() => setShowDemoExpired(false)} />}
+      {showDemoExpired && !isAdmin && expiredDemoUser && <DemoExpiredModal user={expiredDemoUser} onClose={closeDemoExpired} />}
       {showWelcome && !isAdmin && <WelcomeModal emp={selectedEmp} onClose={() => setShowWelcome(false)} onMessages={() => { setShowWelcome(false); setActivePage("mensajes"); }} />}
       {isBusinessWizardOpen && <BusinessWizard rubros={rubros} planes={planes} modules={modulesBase} onClose={() => setIsBusinessWizardOpen(false)} onCreate={(nuevo) => { setEmprendimientos((prev) => [nuevo, ...prev]); setIsBusinessWizardOpen(false); setActivePage("emprendimientos"); }} />}
       {isUserModalOpen && <UsuarioModal rubros={rubros} planes={planes} onClose={() => setIsUserModalOpen(false)} onCreate={(nuevo) => { setUsuarios((prev) => [nuevo, ...prev]); setIsUserModalOpen(false); }} />}
@@ -545,6 +612,41 @@ function SidebarBrand({ isAdmin, emp }) {
       <p className="text-lg font-black text-white leading-tight">{emp?.nombre}</p>
       <p className="text-xs text-sky-300 font-bold uppercase tracking-wide mt-2">{emp?.rubro}</p>
       <p className="text-[11px] text-slate-300 mt-2">Panel personalizado</p>
+    </div>
+  );
+}
+
+function DemoCountdownCard({ remainingMs, expiresOn }) {
+  const isEndingSoon = remainingMs <= 5 * 60 * 1000;
+  return (
+    <div className={`mt-3 rounded-2xl border p-3 ${isEndingSoon ? "border-amber-300/30 bg-amber-400/10" : "border-cyan-300/20 bg-cyan-500/10"}`}>
+      <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wide text-white">
+        <Clock className="w-4 h-4" />
+        Demo activo
+      </div>
+      <p className={`mt-2 text-2xl font-black tabular-nums ${isEndingSoon ? "text-amber-300" : "text-cyan-200"}`}>{formatRemaining(remainingMs)}</p>
+      <p className="mt-1 text-[11px] leading-snug text-slate-300">Finaliza {formatDateTime(expiresOn)}</p>
+    </div>
+  );
+}
+
+function DemoCountdownBanner({ remainingMs, expiresOn }) {
+  const isEndingSoon = remainingMs <= 5 * 60 * 1000;
+  return (
+    <div className={`rounded-[1.5rem] border p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3 ${isEndingSoon ? "border-amber-300/30 bg-amber-400/10" : "border-cyan-300/20 bg-cyan-500/10"}`}>
+      <div className="flex items-center gap-3">
+        <div className={`h-11 w-11 rounded-2xl border flex items-center justify-center ${isEndingSoon ? "border-amber-300/30 bg-amber-400/15 text-amber-200" : "border-cyan-300/20 bg-cyan-400/15 text-cyan-200"}`}>
+          <Clock className="w-5 h-5" />
+        </div>
+        <div>
+          <p className="text-xs font-black uppercase tracking-wide text-slate-300">Demo activo</p>
+          <p className="text-sm text-slate-100">La sesión se cerrará automáticamente al finalizar el tiempo.</p>
+        </div>
+      </div>
+      <div className="md:text-right">
+        <p className={`text-2xl font-black tabular-nums ${isEndingSoon ? "text-amber-300" : "text-cyan-200"}`}>{formatRemaining(remainingMs)}</p>
+        <p className="text-xs text-slate-300">Finaliza {formatDateTime(expiresOn)}</p>
+      </div>
     </div>
   );
 }
