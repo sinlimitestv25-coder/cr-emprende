@@ -333,6 +333,7 @@ function App() {
     { id: "MSG-001", emprendimientoId: "EMP-001", usuarioId: "USR-001", adminId: "ADMIN-CR-001", de: "Rodrigo Jabones", asunto: "Consulta sobre presupuestos", categoria: "Consulta", mensaje: "Hola, quería saber si podemos agregar una opción para guardar presupuestos frecuentes.", estado: "Nuevo", fecha: "Hoy 10:20", respuesta: "", fechaRespuesta: "" },
     { id: "MSG-002", emprendimientoId: "EMP-002", usuarioId: "USR-002", adminId: "ADMIN-CR-001", de: "Ana Repostería", asunto: "Ayuda con recetas", categoria: "Ayuda", mensaje: "Necesito revisar cómo cargar los costos de una receta nueva.", estado: "Respondido", fecha: "Ayer 18:05", respuesta: "Sí, Ana. Entrá en Producción / Recetas y cargá primero la materia prima. Después armamos la receta con cantidades para calcular costo por unidad.", fechaRespuesta: "Ayer 18:42", respondidoPor: "C&R Soporte" },
   ]);
+  const [historialComercial, setHistorialComercial] = useState([]);
 
   const selectedEmp = emprendimientos.find((e) => e.id === selectedEmpId) || emprendimientos[0];
   const isAdmin = loginRole === "Super Admin";
@@ -435,6 +436,18 @@ function App() {
         fechaRespuesta: "",
         adminId: "ADMIN-CR-001",
         ...nuevo,
+      },
+      ...prev,
+    ]);
+  }
+
+  function registerCommercialEvent(evento) {
+    setHistorialComercial((prev) => [
+      {
+        id: `SEG-${Date.now().toString().slice(-6)}`,
+        fecha: new Date().toLocaleString("es-AR", { dateStyle: "short", timeStyle: "short" }),
+        responsable: "Admin C&R",
+        ...evento,
       },
       ...prev,
     ]);
@@ -556,13 +569,13 @@ function App() {
           {isSupportSession && <SupportSessionBanner emp={selectedEmp} />}
           {!isAdmin && !isSupportSession && selectedEmp?.soporteRemoto?.habilitado && <ClientSupportActiveBanner emp={selectedEmp} />}
 
-          {isAdmin && activePage === "dashboard" && <AdminDashboard emprendimientos={emprendimientos} usuarios={usuarios} rubros={rubros} planes={planes} setActivePage={setActivePage} />}
+          {isAdmin && activePage === "dashboard" && <AdminDashboard emprendimientos={emprendimientos} usuarios={usuarios} rubros={rubros} planes={planes} setActivePage={setActivePage} onRegisterCommercialEvent={registerCommercialEvent} />}
           {isAdmin && activePage === "usuarios" && <UsuariosPage usuarios={usuarios} emprendimientos={emprendimientos} onNewUser={() => setIsUserModalOpen(true)} onRenewUser={renewUser} onChangePassword={changeUserPassword} />}
           {isAdmin && activePage === "emprendimientos" && <EmprendimientosPage emprendimientos={filteredEmprendimientos} search={search} setSearch={setSearch} onNewBusiness={() => setIsBusinessWizardOpen(true)} setSelectedEmpId={setSelectedEmpId} setActivePage={setActivePage} />}
           {isAdmin && activePage === "rubros" && <RubrosPage rubros={rubros} />}
           {isAdmin && activePage === "modulos" && <ModulosPage modules={modulesBase} rubros={rubros} />}
           {isAdmin && activePage === "planes" && <PlanesPage planes={planes} />}
-          {isAdmin && activePage === "suscripciones" && <SuscripcionesPage emprendimientos={emprendimientos} planes={planes} />}
+          {isAdmin && activePage === "suscripciones" && <SuscripcionesPage emprendimientos={emprendimientos} planes={planes} historialComercial={historialComercial} />}
           {isAdmin && activePage === "soporte" && <SoporteAdminPage emprendimientos={emprendimientos} setSelectedEmpId={setSelectedEmpId} setActivePage={setActivePage} />}
           {isAdmin && activePage === "mensajes" && <MensajesAdminPage mensajes={mensajes} emprendimientos={emprendimientos} onReply={replyMensaje} />}
 
@@ -726,7 +739,7 @@ function LoginScreen({ email, setEmail, password, setPassword, error, onLogin })
   );
 }
 
-function AdminDashboard({ emprendimientos, usuarios, rubros, planes, setActivePage }) {
+function AdminDashboard({ emprendimientos, usuarios, rubros, planes, setActivePage, onRegisterCommercialEvent }) {
   const [alertStates, setAlertStates] = useState({});
   const [alertNotice, setAlertNotice] = useState("");
   const elite = emprendimientos.filter((e) => e.plan === "Elite").length;
@@ -745,6 +758,7 @@ function AdminDashboard({ emprendimientos, usuarios, rubros, planes, setActivePa
       .filter((u) => (u.estadoPago || "Pendiente") === "Pendiente")
       .map((u) => ({
         id: `pago-${u.id}`,
+        usuario: u.nombre,
         tone: "danger",
         icon: <DollarSign />,
         title: "Pago pendiente",
@@ -758,6 +772,13 @@ function AdminDashboard({ emprendimientos, usuarios, rubros, planes, setActivePa
           } catch {
             setAlertNotice(`No pude copiar el mensaje. Revisá permisos del navegador.`);
           }
+          onRegisterCommercialEvent({
+            usuario: u.nombre,
+            tipo: "Pago pendiente",
+            accion: "Mensaje copiado",
+            estado: "Pendiente",
+            nota: `Se preparó recordatorio de pago para ${u.email}.`,
+          });
           setActivePage("mensajes");
         },
       })),
@@ -765,12 +786,22 @@ function AdminDashboard({ emprendimientos, usuarios, rubros, planes, setActivePa
       .filter((u) => !(u.emprendimientoIds || []).length)
       .map((u) => ({
         id: `emprendimiento-${u.id}`,
+        usuario: u.nombre,
         tone: "warning",
         icon: <Building2 />,
         title: "Usuario sin emprendimiento",
         text: `${u.nombre} ya tiene acceso, pero todavía no tiene emprendimiento vinculado.`,
         actionLabel: "Ver usuarios",
-        action: () => setActivePage("usuarios"),
+        action: () => {
+          onRegisterCommercialEvent({
+            usuario: u.nombre,
+            tipo: "Usuario sin emprendimiento",
+            accion: "Revisión abierta",
+            estado: "Pendiente",
+            nota: `Se revisó el acceso ${u.email} sin emprendimiento vinculado.`,
+          });
+          setActivePage("usuarios");
+        },
       })),
   ].filter((alerta) => alertStates[alerta.id] !== "hidden");
 
@@ -867,8 +898,26 @@ function AdminDashboard({ emprendimientos, usuarios, rubros, planes, setActivePa
                   key={alerta.id}
                   alerta={alerta}
                   state={alertStates[alerta.id] || "active"}
-                  onDone={() => setAlertStates((prev) => ({ ...prev, [alerta.id]: "done" }))}
-                  onHide={() => setAlertStates((prev) => ({ ...prev, [alerta.id]: "hidden" }))}
+                  onDone={() => {
+                    setAlertStates((prev) => ({ ...prev, [alerta.id]: "done" }));
+                    onRegisterCommercialEvent({
+                      usuario: alerta.usuario,
+                      tipo: alerta.title,
+                      accion: "Marcada atendida",
+                      estado: "Atendido",
+                      nota: alerta.text,
+                    });
+                  }}
+                  onHide={() => {
+                    setAlertStates((prev) => ({ ...prev, [alerta.id]: "hidden" }));
+                    onRegisterCommercialEvent({
+                      usuario: alerta.usuario,
+                      tipo: alerta.title,
+                      accion: alertStates[alerta.id] === "done" ? "Quitada del panel" : "Desactivada",
+                      estado: "Cerrado",
+                      nota: alerta.text,
+                    });
+                  }}
                 />
               )) : (
                 <div className="rounded-2xl border border-emerald-400/20 bg-emerald-400/10 p-4 text-sm text-emerald-200 font-bold">Sin alertas comerciales por ahora.</div>
@@ -1704,7 +1753,7 @@ function PlanDetailList({ title, items, icon }) {
   );
 }
 
-function SuscripcionesPage({ emprendimientos, planes }) {
+function SuscripcionesPage({ emprendimientos, planes, historialComercial = [] }) {
   const horasTrabajo = [
     { fecha: "18/06/2026", tarea: "Ajustes visuales del panel admin", horas: 2.5, valorHora: 4500, responsable: "C&R" },
     { fecha: "18/06/2026", tarea: "Configuración y soporte de deploy", horas: 1.5, valorHora: 4500, responsable: "C&R + IA" },
@@ -1768,6 +1817,40 @@ function SuscripcionesPage({ emprendimientos, planes }) {
               ))}
             </tbody>
           </table>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent className="p-5 overflow-x-auto">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
+            <div>
+              <h2 className="text-xl font-black text-white">Historial de seguimiento comercial</h2>
+              <p className="text-sm text-slate-300">Registro de acciones tomadas desde las alertas: pagos pendientes, usuarios sin emprendimiento y cierres manuales.</p>
+            </div>
+            <Badge>{historialComercial.length} movimientos</Badge>
+          </div>
+          {historialComercial.length ? (
+            <table className="w-full min-w-[960px] text-sm">
+              <TableHead headers={["Fecha", "Usuario", "Tipo", "Acción", "Estado", "Responsable", "Nota interna"]} />
+              <tbody>
+                {historialComercial.map((item) => (
+                  <tr key={item.id} className="border-b border-slate-800 hover:bg-slate-900/60 transition">
+                    <td className="py-4 pr-4 text-slate-100 whitespace-nowrap">{item.fecha}</td>
+                    <td className="py-4 pr-4 font-bold text-white whitespace-nowrap">{item.usuario}</td>
+                    <td className="py-4 pr-4"><Badge>{item.tipo}</Badge></td>
+                    <td className="py-4 pr-4 text-slate-100">{item.accion}</td>
+                    <td className="py-4 pr-4"><StatusBadge label={item.estado} tone={item.estado === "Atendido" ? "success" : item.estado === "Cerrado" ? "warning" : "danger"} /></td>
+                    <td className="py-4 pr-4 text-sky-300 font-bold whitespace-nowrap">{item.responsable}</td>
+                    <td className="py-4 pr-4 text-slate-300">{item.nota}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : (
+            <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4 text-sm text-slate-300">
+              Todavía no hay movimientos. Cuando copies un mensaje, marques una alerta como atendida o la desactives desde Dashboard, va a aparecer acá.
+            </div>
+          )}
         </CardContent>
       </Card>
 
