@@ -244,6 +244,12 @@ function isoToEsDate(value) {
   return `${day}/${month}/${year}`;
 }
 
+function addDaysFromToday(days) {
+  const date = new Date();
+  date.setDate(date.getDate() + Number(days));
+  return date.toLocaleDateString("es-AR");
+}
+
 function accessUserFromName(name) {
   const base = (name || "demo")
     .toLowerCase()
@@ -349,12 +355,6 @@ function App() {
   function addMonthsFromToday(months) {
     const date = new Date();
     date.setMonth(date.getMonth() + months);
-    return date.toLocaleDateString("es-AR");
-  }
-
-  function addDaysFromToday(days) {
-    const date = new Date();
-    date.setDate(date.getDate() + Number(days));
     return date.toLocaleDateString("es-AR");
   }
 
