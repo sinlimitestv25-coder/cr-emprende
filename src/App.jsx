@@ -727,7 +727,54 @@ function LoginScreen({ email, setEmail, password, setPassword, error, onLogin })
 }
 
 function AdminDashboard({ emprendimientos, usuarios, rubros, planes, setActivePage }) {
+  const [alertStates, setAlertStates] = useState({});
+  const [alertNotice, setAlertNotice] = useState("");
   const elite = emprendimientos.filter((e) => e.plan === "Elite").length;
+  const usuariosDemo = usuarios.filter((u) => u.demo).length;
+  const usuariosPendientes = usuarios.filter((u) => (u.estadoPago || "Pendiente") === "Pendiente").length;
+  const usuariosSinEmprendimiento = usuarios.filter((u) => !(u.emprendimientoIds || []).length).length;
+  const usuariosPorRubro = rubros.map((rubro) => ({
+    label: rubro.nombre,
+    value: usuarios.filter((u) => u.rubro === rubro.nombre).length,
+  }));
+  const usuariosSinRubro = usuarios.filter((u) => !u.rubro).length;
+  if (usuariosSinRubro) usuariosPorRubro.push({ label: "Sin rubro", value: usuariosSinRubro });
+
+  const alertas = [
+    ...usuarios
+      .filter((u) => (u.estadoPago || "Pendiente") === "Pendiente")
+      .map((u) => ({
+        id: `pago-${u.id}`,
+        tone: "danger",
+        icon: <DollarSign />,
+        title: "Pago pendiente",
+        text: `${u.nombre} figura con pago pendiente en el plan ${u.plan || "Básico"}.`,
+        actionLabel: "Copiar mensaje",
+        action: async () => {
+          const message = `Hola ${u.nombre}, te escribimos de C&R Emprende para recordarte que tu pago figura pendiente. Cuando puedas, coordinamos la regularización para mantener tu acceso activo.`;
+          try {
+            await navigator.clipboard.writeText(message);
+            setAlertNotice(`Mensaje de pago copiado para ${u.nombre}.`);
+          } catch {
+            setAlertNotice(`No pude copiar el mensaje. Revisá permisos del navegador.`);
+          }
+          setActivePage("mensajes");
+        },
+      })),
+    ...usuarios
+      .filter((u) => !(u.emprendimientoIds || []).length)
+      .map((u) => ({
+        id: `emprendimiento-${u.id}`,
+        tone: "warning",
+        icon: <Building2 />,
+        title: "Usuario sin emprendimiento",
+        text: `${u.nombre} ya tiene acceso, pero todavía no tiene emprendimiento vinculado.`,
+        actionLabel: "Ver usuarios",
+        action: () => setActivePage("usuarios"),
+      })),
+  ].filter((alerta) => alertStates[alerta.id] !== "hidden");
+
+  const alertasActivas = alertas.filter((alerta) => alertStates[alerta.id] !== "done");
   const dashboardCards = [
     {
       label: "Emprendimientos",
@@ -762,6 +809,12 @@ function AdminDashboard({ emprendimientos, usuarios, rubros, planes, setActivePa
       className: "from-amber-400 via-orange-500 to-rose-600 border-amber-300/40 text-white shadow-orange-950/35",
     },
   ];
+  const estadoCards = [
+    { label: "Activos", value: usuarios.filter((u) => u.estado === "Activo").length, icon: <CheckCircle2 />, className: statColorStyles.emerald.card, iconClassName: statColorStyles.emerald.icon },
+    { label: "Demos", value: usuariosDemo, icon: <Clock />, className: statColorStyles.sky.card, iconClassName: statColorStyles.sky.icon },
+    { label: "Pagos pendientes", value: usuariosPendientes, icon: <DollarSign />, className: statColorStyles.amber.card, iconClassName: statColorStyles.amber.icon },
+    { label: "Sin emprendimiento", value: usuariosSinEmprendimiento, icon: <AlertTriangle />, className: statColorStyles.violet.card, iconClassName: statColorStyles.violet.icon },
+  ];
 
   return (
     <div className="space-y-6">
@@ -780,7 +833,120 @@ function AdminDashboard({ emprendimientos, usuarios, rubros, planes, setActivePa
           />
         ))}
       </div>
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        {estadoCards.map((item) => (
+          <StatCard key={item.label} icon={item.icon} label={item.label} value={item.value} className={item.className} iconClassName={item.iconClassName} />
+        ))}
+      </div>
+      <div className="grid grid-cols-1 xl:grid-cols-[1.25fr_.75fr] gap-4">
+        <Card>
+          <CardContent className="p-5">
+            <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3 mb-5">
+              <div>
+                <h2 className="text-xl font-bold text-white">Usuarios por rubro</h2>
+                <p className="text-sm text-slate-300 mt-1">Vista rÃ¡pida para entender dÃ³nde estÃ¡ creciendo la plataforma.</p>
+              </div>
+              <Badge>{usuarios.length} usuarios</Badge>
+            </div>
+            <UsersByRubroChart data={usuariosPorRubro} />
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-5">
+            <div className="flex items-start justify-between gap-3 mb-4">
+              <div>
+                <h2 className="text-xl font-bold text-white">Alertas comerciales</h2>
+                <p className="text-sm text-slate-300 mt-1">Prioridad en pagos pendientes y accesos incompletos.</p>
+              </div>
+              <Badge>{alertasActivas.length} activas</Badge>
+            </div>
+            {alertNotice && <div className="mb-3 rounded-2xl border border-emerald-400/20 bg-emerald-400/10 p-3 text-sm font-bold text-emerald-300">{alertNotice}</div>}
+            <div className="space-y-3 max-h-[390px] overflow-y-auto pr-1">
+              {alertas.length ? alertas.map((alerta) => (
+                <CommercialAlertRow
+                  key={alerta.id}
+                  alerta={alerta}
+                  state={alertStates[alerta.id] || "active"}
+                  onDone={() => setAlertStates((prev) => ({ ...prev, [alerta.id]: "done" }))}
+                  onHide={() => setAlertStates((prev) => ({ ...prev, [alerta.id]: "hidden" }))}
+                />
+              )) : (
+                <div className="rounded-2xl border border-emerald-400/20 bg-emerald-400/10 p-4 text-sm text-emerald-200 font-bold">Sin alertas comerciales por ahora.</div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
       <Card><CardContent className="p-5"><h2 className="text-xl font-bold text-white mb-4">Regla de datos</h2><div className="grid grid-cols-1 md:grid-cols-3 gap-3"><ArchitectureRow icon={<Building2 />} title="Emprendimiento ID" text="Cada proyecto tiene su ID: EMP-001, EMP-002, etc." /><ArchitectureRow icon={<Boxes />} title="Datos vinculados" text="Productos, insumos, clientes y finanzas guardan emprendimiento_id." /><ArchitectureRow icon={<ShieldCheck />} title="Aislamiento" text="Cada usuario ve solo los datos de los emprendimientos asignados." /></div></CardContent></Card>
+    </div>
+  );
+}
+
+function UsersByRubroChart({ data }) {
+  const max = Math.max(...data.map((item) => item.value), 1);
+  const points = data.map((item, index) => {
+    const x = data.length === 1 ? 50 : (index / (data.length - 1)) * 100;
+    const y = 92 - (item.value / max) * 72;
+    return { ...item, x, y };
+  });
+  const line = points.map((point) => `${point.x},${point.y}`).join(" ");
+  const area = `0,100 ${line} 100,100`;
+
+  return (
+    <div className="space-y-5">
+      <div className="h-64 rounded-[1.5rem] border border-sky-300/15 bg-slate-950/70 p-4">
+        <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="h-full w-full overflow-visible">
+          <defs>
+            <linearGradient id="rubroArea" x1="0" x2="0" y1="0" y2="1">
+              <stop offset="0%" stopColor="#38bdf8" stopOpacity="0.34" />
+              <stop offset="100%" stopColor="#22c55e" stopOpacity="0.02" />
+            </linearGradient>
+          </defs>
+          <polygon points={area} fill="url(#rubroArea)" />
+          {[20, 40, 60, 80].map((y) => <line key={y} x1="0" x2="100" y1={y} y2={y} stroke="rgba(148,163,184,.16)" strokeWidth="0.35" />)}
+          <polyline points={line} fill="none" stroke="#67e8f9" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
+          {points.map((point) => (
+            <circle key={point.label} cx={point.x} cy={point.y} r="2.6" fill="#0f172a" stroke="#a7f3d0" strokeWidth="1.4" vectorEffect="non-scaling-stroke" />
+          ))}
+        </svg>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        {points.map((item) => (
+          <div key={item.label} className="flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3">
+            <span className="text-sm font-bold text-slate-100 truncate">{item.label}</span>
+            <span className="rounded-full bg-cyan-400/10 border border-cyan-300/20 px-3 py-1 text-sm font-black text-cyan-200">{item.value}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function CommercialAlertRow({ alerta, state, onDone, onHide }) {
+  const isDone = state === "done";
+  const toneClass = alerta.tone === "danger"
+    ? "border-red-400/20 bg-red-400/10 text-red-200"
+    : "border-amber-400/20 bg-amber-400/10 text-amber-100";
+
+  return (
+    <div className={`rounded-2xl border p-4 ${isDone ? "border-emerald-400/20 bg-emerald-400/10 opacity-75" : toneClass}`}>
+      <div className="flex items-start gap-3">
+        <div className="mt-0.5 flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-white/10 border border-white/15">
+          {React.cloneElement(isDone ? <CheckCircle2 /> : alerta.icon, { className: "w-4 h-4" })}
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="font-black text-white">{alerta.title}</p>
+            <StatusBadge label={isDone ? "Atendida" : "Activa"} tone={isDone ? "success" : alerta.tone === "danger" ? "danger" : "warning"} />
+          </div>
+          <p className="mt-1 text-sm text-slate-100">{alerta.text}</p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {!isDone && <Button type="button" onClick={alerta.action} className="rounded-xl bg-blue-500 text-black px-3 py-2 text-xs"><Send className="w-3 h-3 mr-1" />{alerta.actionLabel}</Button>}
+            {!isDone && <Button type="button" onClick={onDone} className="rounded-xl bg-emerald-500/15 text-emerald-200 border border-emerald-400/25 px-3 py-2 text-xs">Marcar atendida</Button>}
+            <Button type="button" onClick={onHide} className="rounded-xl bg-slate-800 text-white px-3 py-2 text-xs">{isDone ? "Quitar" : "Desactivar"}</Button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
