@@ -681,7 +681,7 @@ function LoginScreen({ email, setEmail, password, setPassword, error, onLogin })
           <div className="flex justify-center">
             <div className="relative inline-flex rounded-[1.5rem] bg-white/95 px-5 py-3 shadow-2xl shadow-blue-600/25 border border-white/40 overflow-hidden">
               <img src="/logo-cr.png" alt="C&R Emprende" className="h-44 w-auto object-contain" />
-              <span className="absolute left-1/2 bottom-8 z-10 -translate-x-1/2 -rotate-[16deg] rounded-full bg-gradient-to-r from-fuchsia-500 via-sky-400 to-emerald-300 px-7 py-2 text-2xl font-black uppercase tracking-[0.18em] text-white shadow-2xl shadow-fuchsia-900/35 ring-2 ring-white/80">
+              <span className="absolute left-4 top-6 z-10 -rotate-[16deg] rounded-full bg-gradient-to-r from-fuchsia-500 via-sky-400 to-emerald-300 px-6 py-1.5 text-xl font-black uppercase tracking-[0.18em] text-white shadow-2xl shadow-fuchsia-900/35 ring-2 ring-white/80">
                 Emprende
               </span>
             </div>
