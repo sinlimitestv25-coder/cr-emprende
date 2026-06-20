@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   AlertTriangle,
   ArrowLeft,
@@ -273,6 +273,8 @@ function App() {
   const [isBusinessWizardOpen, setIsBusinessWizardOpen] = useState(false);
   const [isUserModalOpen, setIsUserModalOpen] = useState(false);
   const [showWelcome, setShowWelcome] = useState(false);
+  const [showDemoExpired, setShowDemoExpired] = useState(false);
+  const [expiredDemoUser, setExpiredDemoUser] = useState(null);
   const [mensajes, setMensajes] = useState([
     { id: "MSG-001", emprendimientoId: "EMP-001", usuarioId: "USR-001", adminId: "ADMIN-CR-001", de: "Rodrigo Jabones", asunto: "Consulta sobre presupuestos", categoria: "Consulta", mensaje: "Hola, quería saber si podemos agregar una opción para guardar presupuestos frecuentes.", estado: "Nuevo", fecha: "Hoy 10:20", respuesta: "", fechaRespuesta: "" },
     { id: "MSG-002", emprendimientoId: "EMP-002", usuarioId: "USR-002", adminId: "ADMIN-CR-001", de: "Ana Repostería", asunto: "Ayuda con recetas", categoria: "Ayuda", mensaje: "Necesito revisar cómo cargar los costos de una receta nueva.", estado: "Respondido", fecha: "Ayer 18:05", respuesta: "Sí, Ana. Entrá en Producción / Recetas y cargá primero la materia prima. Después armamos la receta con cantidades para calcular costo por unidad.", fechaRespuesta: "Ayer 18:42", respondidoPor: "C&R Soporte" },
@@ -290,10 +292,17 @@ function App() {
     e.preventDefault();
     const email = loginEmail.toLowerCase();
     const detectedRole = email.includes("admin") || email.includes("cr") ? "Super Admin" : "Dueño";
+    const matchedUser = usuarios.find((u) => u.email?.toLowerCase() === email);
+    const demoExpired = matchedUser?.demo && matchedUser.demoExpiraOn && isDateExpired(matchedUser.demoExpiraOn);
     setLoginRole(detectedRole);
     setIsLoggedIn(true);
-    setShowWelcome(detectedRole !== "Super Admin");
+    setShowWelcome(!demoExpired && detectedRole !== "Super Admin");
+    setShowDemoExpired(demoExpired);
+    setExpiredDemoUser(demoExpired ? matchedUser : null);
     setActivePage(detectedRole === "Super Admin" ? "dashboard" : "mi-panel");
+    if (matchedUser?.emprendimientoIds?.length) {
+      setSelectedEmpId(matchedUser.emprendimientoIds[0]);
+    }
   }
 
   function handleLogout() {
@@ -341,6 +350,19 @@ function App() {
     const date = new Date();
     date.setMonth(date.getMonth() + months);
     return date.toLocaleDateString("es-AR");
+  }
+
+  function addDaysFromToday(days) {
+    const date = new Date();
+    date.setDate(date.getDate() + Number(days));
+    return date.toLocaleDateString("es-AR");
+  }
+
+  function isDateExpired(dateText) {
+    const date = parseEsDate(dateText);
+    if (!date) return false;
+    date.setHours(23, 59, 59, 999);
+    return new Date() > date;
   }
 
   function renewUser(userId, months) {
@@ -448,6 +470,7 @@ function App() {
         </div>
       </main>
 
+      {showDemoExpired && !isAdmin && expiredDemoUser && <DemoExpiredModal user={expiredDemoUser} onClose={() => setShowDemoExpired(false)} />}
       {showWelcome && !isAdmin && <WelcomeModal emp={selectedEmp} onClose={() => setShowWelcome(false)} onMessages={() => { setShowWelcome(false); setActivePage("mensajes"); }} />}
       {isBusinessWizardOpen && <BusinessWizard rubros={rubros} planes={planes} modules={modulesBase} onClose={() => setIsBusinessWizardOpen(false)} onCreate={(nuevo) => { setEmprendimientos((prev) => [nuevo, ...prev]); setIsBusinessWizardOpen(false); setActivePage("emprendimientos"); }} />}
       {isUserModalOpen && <UsuarioModal rubros={rubros} planes={planes} onClose={() => setIsUserModalOpen(false)} onCreate={(nuevo) => { setUsuarios((prev) => [nuevo, ...prev]); setIsUserModalOpen(false); }} />}
@@ -717,7 +740,7 @@ function UsuariosPage({ usuarios, emprendimientos, onNewUser, onRenewUser, onCha
                     <td className="py-2.5 pr-3 text-slate-100 whitespace-nowrap">{u.telefono || "Sin teléfono"}</td>
                     <td className="py-2.5 pr-3 text-slate-100 whitespace-nowrap">{u.email}</td>
                     <td className="py-2.5 pr-3 text-slate-100 whitespace-nowrap">{userRubro(u, emps)}</td>
-                    <td className="py-2.5 pr-3"><Badge>{u.plan || "Básico"}</Badge></td>
+                    <td className="py-2.5 pr-3 flex items-center gap-2"><Badge>{u.plan || "Básico"}</Badge>{u.demo && <Badge>Demo</Badge>}</td>
                     <td className="py-2.5 pr-3"><StatusBadge label={u.estadoPago || "Pendiente"} tone={paymentTone(u.estadoPago)} /></td>
                     <td className="py-2.5 pr-3 text-slate-100 whitespace-nowrap">{emps.map((e) => e.nombre).join(", ") || "Pendiente"}</td>
                     <td className="py-2.5 pr-3">
@@ -779,6 +802,7 @@ function UsuariosPage({ usuarios, emprendimientos, onNewUser, onRenewUser, onCha
                 <DetailBox icon={<Phone />} label="Teléfono" value={selectedUser.telefono || "Sin teléfono"} />
                 <DetailBox icon={<Boxes />} label="Rubro" value={userRubro(selectedUser, emps)} />
                 <DetailBox icon={<CreditCard />} label="Plan contratado" value={selectedUser.plan || "Básico"} />
+                <DetailBox icon={<ShieldCheck />} label="Demo" value={selectedUser.demo ? "Sí" : "No"} />
                 <DetailBox icon={<DollarSign />} label="Estado de pago" value={selectedUser.estadoPago || "Pendiente"} />
                 <DetailBox icon={<CalendarClock />} label="Fecha vencimiento" value={selectedUser.renovadoHasta || "Sin fecha"} />
                 <DetailBox icon={<Building2 />} label="Emprendimiento" value={emps.map((e) => e.nombre).join(", ") || "Pendiente de crear"} />
@@ -3236,6 +3260,34 @@ function WelcomeModal({ emp, onClose, onMessages }) {
   );
 }
 
+function DemoExpiredModal({ user, onClose }) {
+  const supportPhone = "2974292907";
+  const message = `Hola, mi demo en C&R Emprende ha finalizado y necesito ayuda para seguir con el acceso.`;
+  const whatsappUrl = `https://wa.me/${supportPhone}?text=${encodeURIComponent(message)}`;
+
+  return (
+    <ModalShell eyebrow="Demo finalizado" title="Tu periodo de prueba terminó" onClose={onClose}>
+      <div className="p-5 space-y-5">
+        <div className="rounded-2xl border border-red-500/20 bg-red-500/10 p-4">
+          <p className="text-sm text-slate-100">
+            El demo de <b>{user.nombre}</b> finalizó el <b>{user.demoExpiraOn}</b>. Para seguir usando la plataforma, contactá a los desarrolladores y coordiná el próximo paso.
+          </p>
+        </div>
+        <div className="rounded-2xl border border-blue-500/20 bg-slate-950/80 p-4 text-sm text-slate-300">
+          <p className="font-bold text-white">Sugerencia</p>
+          <p className="mt-2">Si necesitás ayuda o querés que te conectemos con el equipo, escribinos por WhatsApp y te asesoramos para continuar.</p>
+        </div>
+        <div className="flex flex-col sm:flex-row gap-3">
+          <Button onClick={onClose} className="w-full bg-slate-800 text-white">Cerrar</Button>
+          <a href={whatsappUrl} target="_blank" rel="noreferrer" className="w-full">
+            <Button className="w-full bg-green-500 text-black">Contactar por WhatsApp</Button>
+          </a>
+        </div>
+      </div>
+    </ModalShell>
+  );
+}
+
 function MensajesAdminPage({ mensajes, emprendimientos, onReply }) {
   const [selected, setSelected] = useState(null);
   const [replyText, setReplyText] = useState("");
@@ -3525,6 +3577,8 @@ function UsuarioModal({ rubros, planes, onClose, onCreate }) {
     usuario: "demo@cremprende.com",
     password: "123456",
     vencimiento: todayISO(),
+    esDemo: false,
+    demoDuracionDias: 7,
   });
   const [manualUser, setManualUser] = useState(false);
   const [error, setError] = useState("");
@@ -3566,6 +3620,9 @@ function UsuarioModal({ rubros, planes, onClose, onCreate }) {
       return;
     }
 
+    const demoDays = Number(f.demoDuracionDias) || 7;
+    const demoExpiresOn = f.esDemo ? addDaysFromToday(demoDays) : null;
+
     onCreate({
       id: `USR-${Date.now().toString().slice(-4)}`,
       nombre: f.nombre.trim(),
@@ -3573,15 +3630,18 @@ function UsuarioModal({ rubros, planes, onClose, onCreate }) {
       email: f.usuario.trim(),
       rol: "Dueño",
       rubro: rubroSeleccionado?.nombre || "Sin rubro",
-      plan: f.plan,
+      plan: f.esDemo ? "Demo" : f.plan,
       periodicidad: f.periodicidad,
-      estadoPago: f.estadoPago,
+      estadoPago: f.esDemo ? "Bonificado" : f.estadoPago,
       fechaAlta,
-      montoPlan: planSeleccionado?.precio || "$0",
+      montoPlan: f.esDemo ? "$0" : planSeleccionado?.precio || "$0",
       emprendimientoIds: [],
       estado: "Activo",
+      demo: f.esDemo,
+      demoDuracionDias: f.esDemo ? demoDays : undefined,
+      demoExpiraOn: f.esDemo ? demoExpiresOn : undefined,
       password: f.password.trim(),
-      renovadoHasta: isoToEsDate(f.vencimiento),
+      renovadoHasta: f.esDemo ? demoExpiresOn : isoToEsDate(f.vencimiento),
       cambiosPassword: 0,
       renovaciones: 0,
     });
@@ -3602,6 +3662,16 @@ function UsuarioModal({ rubros, planes, onClose, onCreate }) {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <InputField icon={<Users />} label="Nombre y apellido" value={f.nombre} onChange={(e) => change("nombre", e.target.value)} placeholder="Ej: Juan Pérez" />
           <InputField icon={<Phone />} label="Teléfono" value={f.telefono} onChange={(e) => change("telefono", e.target.value)} placeholder="Ej: 2974 123456" />
+          <div className="rounded-2xl border border-slate-800 bg-slate-950 p-4 col-span-1 md:col-span-2">
+            <label className="flex items-center gap-3 text-sm font-bold text-slate-100">
+              <input type="checkbox" checked={f.esDemo} onChange={(e) => change("esDemo", e.target.checked)} className="h-4 w-4 rounded border-slate-600 bg-slate-900 text-sky-400 focus:ring-sky-300" />
+              Crear usuario demo
+            </label>
+            <p className="text-xs text-slate-400 mt-2">Si activás demo, el acceso vence automáticamente tras el tiempo elegido y aparecerá un aviso para contactar a los desarrolladores.</p>
+            {f.esDemo && (
+              <InputField label="Duración de demo (días)" type="number" min="1" max="90" value={f.demoDuracionDias} onChange={(e) => change("demoDuracionDias", e.target.value)} />
+            )}
+          </div>
           <SelectField label="Rubro" value={f.rubroId} onChange={(e) => change("rubroId", e.target.value)} options={rubros.map((r) => r.id)} labels={Object.fromEntries(rubros.map((r) => [r.id, r.nombre]))} />
           <SelectField label="Plan contratado" value={f.plan} onChange={(e) => change("plan", e.target.value)} options={["Básico", "Pro", "Elite"]} />
           <SelectField label="Periodo de contratación" value={f.periodicidad} onChange={(e) => change("periodicidad", e.target.value)} options={["Mensual", "Trimestral", "Semestral", "Anual"]} />
@@ -3612,10 +3682,9 @@ function UsuarioModal({ rubros, planes, onClose, onCreate }) {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          <InfoItem label="Plan" value={`${f.plan} · ${planSeleccionado?.precio || "$0"}`} highlight />
-          <InfoItem label="Periodo" value={f.periodicidad} />
-          <InfoItem label="Pago" value={f.estadoPago} />
-          <InfoItem label="Rubro" value={rubroSeleccionado?.nombre || "Sin rubro"} />
+                <InfoItem label="Plan" value={`${f.esDemo ? "Demo" : f.plan} · ${f.esDemo ? "$0" : planSeleccionado?.precio || "$0"}`} highlight />
+                <InfoItem label="Periodo" value={f.periodicidad} />
+                <InfoItem label="Pago" value={f.esDemo ? "Bonificado" : f.estadoPago} />
         </div>
 
         <div className="rounded-2xl border border-amber-400/20 bg-amber-400/10 p-4 text-sm text-amber-100">
