@@ -1472,8 +1472,8 @@ function RubrosManagerPage({ rubros, modules, onChange }) {
           const palette = rubroCardPalettes[index % rubroCardPalettes.length];
           const isExpanded = expandedRubroId === r.id;
           return (
-            <ColorCard key={r.id} className={`${palette.card} transition duration-300 ${isExpanded ? "xl:col-span-2 xl:row-span-2" : "hover:-translate-y-1"}`}>
-              <CardContent className="p-5 space-y-4">
+            <ColorCard key={r.id} className={`${palette.card} transition duration-300 ${isExpanded ? "order-first xl:col-span-2" : "hover:-translate-y-1"}`}>
+              <CardContent className={`${isExpanded ? "p-6 md:p-7" : "p-5"} space-y-4`}>
                 <button type="button" onClick={() => setExpandedRubroId(isExpanded ? null : r.id)} className="w-full text-left">
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex gap-3">
