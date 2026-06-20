@@ -689,14 +689,16 @@ function LoginScreen({ email, setEmail, password, setPassword, error, onLogin })
             <h1 className="text-4xl md:text-5xl font-black mt-4 leading-tight">Gestión simple para emprendedores reales</h1>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-8">
+          <div className="space-y-3 mt-8">
             {loginBenefits.map((item) => (
-              <div key={item.label} className={`rounded-[1.6rem] bg-gradient-to-br ${item.className} p-4 min-h-[132px] border border-white/20 shadow-xl text-white transition-transform hover:-translate-y-1`}>
-                <div className="w-12 h-12 rounded-2xl bg-white/18 border border-white/25 flex items-center justify-center mb-4">
-                  {React.cloneElement(item.icon, { className: "w-6 h-6" })}
+              <div key={item.label} className={`rounded-2xl bg-gradient-to-br ${item.className} px-4 py-3 border border-white/20 shadow-xl text-white transition-transform hover:-translate-y-0.5 flex items-center gap-4`}>
+                <div className="w-11 h-11 rounded-2xl bg-white/18 border border-white/25 flex items-center justify-center flex-shrink-0">
+                  {React.cloneElement(item.icon, { className: "w-5 h-5" })}
                 </div>
-                <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-white/80">{item.label}</p>
-                <p className="text-base font-semibold mt-2 leading-snug text-white/95">{item.value}</p>
+                <div className="min-w-0">
+                  <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-white/80">{item.label}</p>
+                  <p className="text-sm font-semibold mt-1 leading-snug text-white/95">{item.value}</p>
+                </div>
               </div>
             ))}
           </div>
