@@ -268,6 +268,8 @@ function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(isSupportSession);
   const [loginRole, setLoginRole] = useState(isSupportSession ? "Soporte C&R" : "Super Admin");
   const [loginEmail, setLoginEmail] = useState(isSupportSession ? "soporte@crsoluciones.com" : "admin@crsoluciones.com");
+  const [loginPassword, setLoginPassword] = useState("");
+  const [loginError, setLoginError] = useState("");
   const [activePage, setActivePage] = useState(isSupportSession ? "mi-panel" : "dashboard");
   const [emprendimientos, setEmprendimientos] = useState(emprendimientosIniciales);
   const [usuarios, setUsuarios] = useState(usuariosIniciales);
@@ -296,10 +298,24 @@ function App() {
 
   function handleLogin(e) {
     e.preventDefault();
-    const email = loginEmail.toLowerCase();
-    const detectedRole = email.includes("admin") || email.includes("cr") ? "Super Admin" : "Dueño";
+    const email = loginEmail.trim().toLowerCase();
+    const password = loginPassword.trim();
     const matchedUser = usuarios.find((u) => u.email?.toLowerCase() === email);
+    const isAdminEmail = email.includes("admin") || email.endsWith("@crsoluciones.com");
+    const detectedRole = matchedUser ? matchedUser.rol || "Dueño" : isAdminEmail ? "Super Admin" : null;
+
+    if (!detectedRole) {
+      setLoginError("No encontramos ese usuario. Revisá el email o crealo desde Usuarios.");
+      return;
+    }
+
+    if (matchedUser && matchedUser.password !== password) {
+      setLoginError("La contraseña no coincide con ese usuario.");
+      return;
+    }
+
     const demoExpired = matchedUser?.demo && matchedUser.demoExpiraOn && isDateExpired(matchedUser.demoExpiraOn);
+    setLoginError("");
     setLoginRole(detectedRole);
     setIsLoggedIn(true);
     setShowWelcome(!demoExpired && detectedRole !== "Super Admin");
@@ -389,7 +405,7 @@ function App() {
   }
 
   if (!isLoggedIn) {
-    return <LoginScreen email={loginEmail} setEmail={setLoginEmail} onLogin={handleLogin} />;
+    return <LoginScreen email={loginEmail} setEmail={setLoginEmail} password={loginPassword} setPassword={setLoginPassword} error={loginError} onLogin={handleLogin} />;
   }
 
   return (
@@ -502,7 +518,7 @@ function SidebarBrand({ isAdmin, emp }) {
   );
 }
 
-function LoginScreen({ email, setEmail, onLogin }) {
+function LoginScreen({ email, setEmail, password, setPassword, error, onLogin }) {
   const loginBenefits = [
     {
       icon: <ShieldCheck />,
@@ -570,10 +586,11 @@ function LoginScreen({ email, setEmail, onLogin }) {
             </div>
             <p className="text-slate-200 mt-4">Usá tu usuario y contraseña. Luego Supabase detectará automáticamente tu rol y tu emprendimiento.</p>
           </div>
+          {error && <div className="rounded-2xl border border-red-400/20 bg-red-400/10 p-3 text-sm font-bold text-red-300">{error}</div>}
           <InputField icon={<Users />} label="Usuario" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="admin@crsoluciones.com" />
-          <InputField icon={<KeyRound />} label="Contraseña" type="password" placeholder="••••••••" />
+          <InputField icon={<KeyRound />} label="Contraseña" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" />
           <div className="rounded-2xl border border-sky-300/20 bg-sky-500/10 p-4 shadow-inner shadow-sky-950/30">
-            <p className="text-sm text-slate-100">Modo prototipo: si el usuario contiene <b>admin</b> o <b>cr</b>, entra como administrador. Cualquier otro usuario entra como emprendedor.</p>
+            <p className="text-sm text-slate-100">Modo prototipo: los usuarios cargados entran con su email y contraseña temporal. Los correos internos de C&R entran como administrador.</p>
           </div>
           <Button type="submit" className="w-full rounded-2xl bg-gradient-to-r from-sky-400 via-cyan-300 to-emerald-300 text-slate-950 hover:scale-[1.01] py-6 font-black shadow-xl shadow-sky-950/30">Ingresar</Button>
         </form>
