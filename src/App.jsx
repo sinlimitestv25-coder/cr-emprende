@@ -597,9 +597,8 @@ function SidebarBrand({ isAdmin, emp }) {
 
   if (isAdmin) {
     return (
-      <div className="mb-8 rounded-[2rem] bg-white p-5 shadow-2xl shadow-blue-600/20 border border-blue-500/10">
-        <img src="/logo-cr.png" alt="C&R Soluciones Digitales" className="w-full max-h-32 object-contain" />
-        <p className="text-center text-[11px] text-slate-500 font-bold uppercase tracking-[0.22em] mt-3">Soluciones Digitales</p>
+      <div className="mb-8 rounded-[1.5rem] bg-white p-4 shadow-2xl shadow-blue-600/20 border border-blue-500/10">
+        <img src="/logo-cr.png" alt="C&R Emprende" className="w-full max-h-36 object-contain" />
       </div>
     );
   }
@@ -685,9 +684,9 @@ function LoginScreen({ email, setEmail, password, setPassword, error, onLogin })
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_10%,rgba(168,85,247,.20),transparent_28%)]" />
       <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-[1.15fr_.85fr] rounded-[2.2rem] overflow-hidden glass-panel relative z-10 shadow-2xl shadow-blue-950/40 border border-white/10">
         <div className="p-7 md:p-10 bg-gradient-to-br from-slate-950/92 via-black/72 to-slate-900/72">
-          <div className="flex justify-center lg:justify-start">
-            <div className="w-full max-w-md rounded-[2rem] bg-white/95 px-7 py-6 shadow-2xl shadow-blue-600/25 border border-white/40">
-              <img src="/logo-cr.png" alt="C&R Soluciones Digitales" className="w-full h-32 object-contain" />
+          <div className="flex justify-center">
+            <div className="inline-flex rounded-[1.5rem] bg-white/95 px-5 py-3 shadow-2xl shadow-blue-600/25 border border-white/40">
+              <img src="/logo-cr.png" alt="C&R Emprende" className="h-36 w-auto object-contain" />
             </div>
           </div>
 
