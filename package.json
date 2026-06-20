@@ -1,7 +1,7 @@
 {
-  "name": "cr-emprende",
+  "name": "emprende-gestion-saas",
   "private": true,
-  "version": "0.2.0",
+  "version": "0.1.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -9,19 +9,18 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@vitejs/plugin-react": "4.3.4",
-    "vite": "5.4.14",
-    "react": "18.3.1",
-    "react-dom": "18.3.1",
-    "framer-motion": "11.18.2",
-    "lucide-react": "0.468.0"
+    "@vitejs/plugin-react": "latest",
+    "vite": "latest",
+    "typescript": "latest",
+    "react": "latest",
+    "react-dom": "latest",
+    "framer-motion": "latest",
+    "lucide-react": "latest"
   },
   "devDependencies": {
-    "tailwindcss": "3.4.17",
-    "postcss": "8.4.49",
-    "autoprefixer": "10.4.20"
-  },
-  "engines": {
-    "node": ">=18.17.0"
+    "tailwindcss": "latest",
+    "@tailwindcss/postcss": "latest",
+    "postcss": "latest",
+    "autoprefixer": "latest"
   }
 }
