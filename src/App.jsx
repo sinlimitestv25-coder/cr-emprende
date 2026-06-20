@@ -17,6 +17,8 @@ import {
   LogIn,
   LogOut,
   MessageCircle,
+  Mail,
+  Send,
   Package,
   Palette,
   Phone,
@@ -139,6 +141,7 @@ const recetasDemo = [
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [loginRole, setLoginRole] = useState("Super Admin");
+  const [loginEmail, setLoginEmail] = useState("admin@crsoluciones.com");
   const [activePage, setActivePage] = useState("dashboard");
   const [emprendimientos, setEmprendimientos] = useState(emprendimientosIniciales);
   const [usuarios, setUsuarios] = useState(usuariosIniciales);
@@ -149,6 +152,11 @@ function App() {
   const [showPasswords, setShowPasswords] = useState(false);
   const [isBusinessWizardOpen, setIsBusinessWizardOpen] = useState(false);
   const [isUserModalOpen, setIsUserModalOpen] = useState(false);
+  const [showWelcome, setShowWelcome] = useState(false);
+  const [mensajes, setMensajes] = useState([
+    { id: "MSG-001", emprendimientoId: "EMP-001", de: "Rodrigo Jabones", asunto: "Consulta sobre presupuestos", categoria: "Consulta", mensaje: "Hola, quería saber si podemos agregar una opción para guardar presupuestos frecuentes.", estado: "Nuevo", fecha: "Hoy 10:20" },
+    { id: "MSG-002", emprendimientoId: "EMP-002", de: "Ana Repostería", asunto: "Ayuda con recetas", categoria: "Ayuda", mensaje: "Necesito revisar cómo cargar los costos de una receta nueva.", estado: "Respondido", fecha: "Ayer 18:05" },
+  ]);
 
   const selectedEmp = emprendimientos.find((e) => e.id === selectedEmpId) || emprendimientos[0];
   const isAdmin = loginRole === "Super Admin";
@@ -160,8 +168,12 @@ function App() {
 
   function handleLogin(e) {
     e.preventDefault();
+    const email = loginEmail.toLowerCase();
+    const detectedRole = email.includes("admin") || email.includes("cr") ? "Super Admin" : "Dueño";
+    setLoginRole(detectedRole);
     setIsLoggedIn(true);
-    setActivePage(loginRole === "Super Admin" ? "dashboard" : "mi-panel");
+    setShowWelcome(detectedRole !== "Super Admin");
+    setActivePage(detectedRole === "Super Admin" ? "dashboard" : "mi-panel");
   }
 
   function handleLogout() {
@@ -173,25 +185,26 @@ function App() {
     setEmprendimientos((prev) => prev.map((e) => (e.id === updated.id ? updated : e)));
   }
 
+  function sendMensaje(nuevo) {
+    setMensajes((prev) => [
+      {
+        id: `MSG-${Date.now().toString().slice(-5)}`,
+        fecha: "Ahora",
+        estado: "Nuevo",
+        ...nuevo,
+      },
+      ...prev,
+    ]);
+  }
+
   if (!isLoggedIn) {
-    return <LoginScreen role={loginRole} setRole={setLoginRole} onLogin={handleLogin} />;
+    return <LoginScreen email={loginEmail} setEmail={setLoginEmail} onLogin={handleLogin} />;
   }
 
   return (
-    <div className="min-h-screen text-white flex bg-slate-950">
+    <div className="min-h-screen text-white flex bg-[#07111f]">
       <aside className="hidden md:flex w-72 glass-panel border-r border-blue-500/20 p-5 flex-col sticky top-0 h-screen">
-        <div className="mb-8">
-          <div className="flex items-center gap-3">
-            <div className="h-12 w-12 rounded-2xl bg-white p-2 shadow-lg shadow-blue-500/20 flex items-center justify-center">
-              <img src="/logo-cr.png" alt="C&R Soluciones Digitales" className="max-h-full max-w-full object-contain" />
-            </div>
-            <div>
-              <p className="text-xs text-sky-300 font-bold uppercase tracking-wide">C&R Soluciones Digitales</p>
-              <h1 className="text-2xl font-bold mt-0.5">C&R Emprende</h1>
-            </div>
-          </div>
-          <p className="text-xs text-slate-300 mt-3">Plataforma de gestión para emprendedores</p>
-        </div>
+        <SidebarBrand isAdmin={isAdmin} emp={selectedEmp} />
         <nav className="space-y-2">
           {isAdmin ? (
             <>
@@ -203,6 +216,7 @@ function App() {
               <SidebarButton active={activePage === "planes"} icon={<CreditCard />} label="Planes" onClick={() => setActivePage("planes")} />
               <SidebarButton active={activePage === "suscripciones"} icon={<DollarSign />} label="Suscripciones" onClick={() => setActivePage("suscripciones")} />
               <SidebarButton active={activePage === "soporte"} icon={<ShieldCheck />} label="Soporte remoto" onClick={() => setActivePage("soporte")} />
+              <SidebarButton active={activePage === "mensajes"} icon={<Mail />} label="Mensajes" onClick={() => setActivePage("mensajes")} />
             </>
           ) : (
             <>
@@ -211,6 +225,7 @@ function App() {
               <SidebarButton active={activePage === "insumos"} icon={<Boxes />} label="Insumos" onClick={() => setActivePage("insumos")} />
               <SidebarButton active={activePage === "recetas"} icon={<ClipboardList />} label="Producción / Recetas" onClick={() => setActivePage("recetas")} />
               <SidebarButton active={activePage === "finanzas"} icon={<DollarSign />} label="Finanzas" onClick={() => setActivePage("finanzas")} />
+              <SidebarButton active={activePage === "mensajes"} icon={<Mail />} label="Mensajes C&R" onClick={() => setActivePage("mensajes")} />
               <SidebarButton active={activePage === "configuracion"} icon={<Palette />} label="Configuración" onClick={() => setActivePage("configuracion")} />
             </>
           )}
@@ -235,6 +250,7 @@ function App() {
           {isAdmin && activePage === "planes" && <PlanesPage planes={planes} />}
           {isAdmin && activePage === "suscripciones" && <SuscripcionesPage emprendimientos={emprendimientos} planes={planes} />}
           {isAdmin && activePage === "soporte" && <SoporteAdminPage emprendimientos={emprendimientos} setSelectedEmpId={setSelectedEmpId} setActivePage={setActivePage} />}
+          {isAdmin && activePage === "mensajes" && <MensajesAdminPage mensajes={mensajes} emprendimientos={emprendimientos} />}
 
           {!isAdmin && activePage === "mi-panel" && <ClienteDashboard emp={selectedEmp} />}
           {!isAdmin && activePage === "productos" && <ClienteProductos emp={selectedEmp} />}
@@ -242,48 +258,74 @@ function App() {
           {!isAdmin && activePage === "recetas" && <ClienteRecetas emp={selectedEmp} />}
           {!isAdmin && activePage === "finanzas" && <ClienteFinanzas emp={selectedEmp} />}
           {!isAdmin && activePage === "configuracion" && <ClienteConfiguracion emp={selectedEmp} updateEmp={updateEmprendimientoSettings} plan={planes.find((p) => p.nombre === selectedEmp.plan)} />}
+          {!isAdmin && activePage === "mensajes" && <ClienteMensajesPage emp={selectedEmp} mensajes={mensajes.filter((m) => m.emprendimientoId === selectedEmp.id)} onSend={sendMensaje} />}
 
           {isAdmin && activePage === "vista-cliente" && <ClienteDashboard emp={selectedEmp} adminView onBack={() => setActivePage("soporte")} />}
         </div>
       </main>
 
+      {showWelcome && !isAdmin && <WelcomeModal emp={selectedEmp} onClose={() => setShowWelcome(false)} onMessages={() => { setShowWelcome(false); setActivePage("mensajes"); }} />}
       {isBusinessWizardOpen && <BusinessWizard rubros={rubros} planes={planes} modules={modulesBase} onClose={() => setIsBusinessWizardOpen(false)} onCreate={(nuevo) => { setEmprendimientos((prev) => [nuevo, ...prev]); setIsBusinessWizardOpen(false); setActivePage("emprendimientos"); }} />}
       {isUserModalOpen && <UsuarioModal emprendimientos={emprendimientos} onClose={() => setIsUserModalOpen(false)} onCreate={(nuevo) => { setUsuarios((prev) => [nuevo, ...prev]); setIsUserModalOpen(false); }} />}
     </div>
   );
 }
 
-function LoginScreen({ role, setRole, onLogin }) {
-  const roles = ["Super Admin", "Dueño", "Administrador", "Operador", "Vendedor"];
+function SidebarBrand({ isAdmin, emp }) {
+  const isImageLogo = !isAdmin && emp?.logo && (emp.logo.startsWith("http") || emp.logo.startsWith("/"));
+
+  if (isAdmin) {
+    return (
+      <div className="mb-8 rounded-[2rem] bg-white p-5 shadow-2xl shadow-blue-600/20 border border-blue-500/10">
+        <img src="/logo-cr.png" alt="C&R Soluciones Digitales" className="w-full max-h-32 object-contain" />
+        <p className="text-center text-[11px] text-slate-500 font-bold uppercase tracking-[0.22em] mt-3">Soluciones Digitales</p>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen text-white flex items-center justify-center p-4 bg-slate-950">
-      <div className="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-2 rounded-[2rem] overflow-hidden glass-panel">
-        <div className="p-8 md:p-10 bg-gradient-to-br from-slate-950 via-black to-slate-900">
-          <p className="text-sm text-sky-300 font-bold uppercase tracking-wide">C&R Soluciones Digitales</p>
-          <h1 className="text-4xl md:text-5xl font-bold mt-4 leading-tight">Plataforma de gestión para emprendimientos</h1>
-          <p className="text-slate-200 mt-4 leading-relaxed">Una sola plataforma, muchos emprendimientos. Cada usuario entra con su ID y ve solo la información de su propio proyecto.</p>
+    <div className="mb-8 rounded-[2rem] bg-gradient-to-br from-slate-900 to-slate-950 border border-blue-500/25 p-5 text-center shadow-2xl shadow-blue-900/20">
+      <div className="mx-auto h-24 w-24 rounded-[1.75rem] bg-blue-500/15 border border-blue-400/25 flex items-center justify-center overflow-hidden mb-4">
+        {isImageLogo ? <img src={emp.logo} alt={emp.nombre} className="h-full w-full object-cover" /> : <span className="text-3xl font-black text-sky-300">{emp?.logo || emp?.nombre?.slice(0,2) || "E"}</span>}
+      </div>
+      <p className="text-lg font-black text-white leading-tight">{emp?.nombre}</p>
+      <p className="text-xs text-sky-300 font-bold uppercase tracking-wide mt-2">{emp?.rubro}</p>
+      <p className="text-[11px] text-slate-300 mt-2">Panel personalizado</p>
+    </div>
+  );
+}
+
+function LoginScreen({ email, setEmail, onLogin }) {
+  return (
+    <div className="min-h-screen text-white flex items-center justify-center p-4 bg-slate-950 relative overflow-hidden" style={{ backgroundImage: "linear-gradient(rgba(2,6,23,.62), rgba(2,6,23,.86)), url('/fondo-saas.png')", backgroundSize: "cover", backgroundPosition: "center" }}>
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(14,165,233,.25),transparent_30%)]" />
+      <div className="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-2 rounded-[2rem] overflow-hidden glass-panel relative z-10">
+        <div className="p-8 md:p-10 bg-gradient-to-br from-slate-950/95 via-black/80 to-slate-900/80">
+          <div className="max-w-xs rounded-[2rem] bg-white/95 p-5 shadow-2xl shadow-blue-600/20 mb-8">
+            <img src="/logo-cr.png" alt="C&R Soluciones Digitales" className="w-full object-contain" />
+          </div>
+          <p className="text-sm text-sky-300 font-bold uppercase tracking-wide">C&R Emprende</p>
+          <h1 className="text-4xl md:text-5xl font-bold mt-4 leading-tight">Gestión simple para emprendedores reales</h1>
+          <p className="text-slate-200 mt-4 leading-relaxed">Una plataforma para ordenar stock, insumos, costos, clientes, presupuestos, finanzas y mensajes con C&R desde un solo lugar.</p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-8">
-            <InfoItem label="Tenant ID" value="EMP-001" highlight />
-            <InfoItem label="Rubros" value="Ferias, comida, artesanías" />
-            <InfoItem label="Datos aislados" value="Por emprendimiento" />
-            <InfoItem label="Soporte" value="Acceso autorizado" />
+            <InfoItem label="Datos seguros" value="Por emprendimiento" highlight />
+            <InfoItem label="Rubros" value="Ferias y comercios" />
+            <InfoItem label="Soporte" value="Mensajes internos" />
+            <InfoItem label="Planes" value="Básico, Pro y Elite" />
           </div>
         </div>
-        <form onSubmit={onLogin} className="p-8 md:p-10 bg-slate-900/90 space-y-5">
+        <form onSubmit={onLogin} className="p-8 md:p-10 bg-slate-900/85 space-y-5 backdrop-blur-xl">
           <div>
-            <div className="w-14 h-14 rounded-2xl bg-blue-500/10 text-sky-300 flex items-center justify-center mb-4"><LogIn className="w-7 h-7" /></div>
+            <div className="w-16 h-16 rounded-3xl bg-blue-500/10 text-sky-300 flex items-center justify-center mb-4 shadow-xl shadow-blue-500/10"><LogIn className="w-8 h-8" /></div>
             <h2 className="text-3xl font-bold text-white">Ingresar</h2>
-            <p className="text-slate-200 mt-2">Elegí un rol para probar el prototipo.</p>
+            <p className="text-slate-200 mt-2">Usá tu usuario y contraseña. Luego Supabase detectará automáticamente tu rol y tu emprendimiento.</p>
           </div>
-          <InputField icon={<Users />} label="Usuario" placeholder="admin@crdesarrollo.com" />
+          <InputField icon={<Users />} label="Usuario" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="admin@crsoluciones.com" />
           <InputField icon={<KeyRound />} label="Contraseña" type="password" placeholder="••••••••" />
-          <div>
-            <label className="block text-sm text-sky-300 font-semibold mb-2">Rol de acceso</label>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {roles.map((item) => <button key={item} type="button" onClick={() => setRole(item)} className={`rounded-xl border px-3 py-3 text-sm text-left font-bold transition ${role === item ? "border-blue-500 bg-blue-500 text-black" : "border-slate-700 bg-slate-950 text-slate-100 hover:border-blue-500/50"}`}>{item}</button>)}
-            </div>
+          <div className="rounded-2xl border border-blue-500/20 bg-blue-500/10 p-4">
+            <p className="text-sm text-slate-100">Modo prototipo: si el usuario contiene <b>admin</b> o <b>cr</b>, entra como administrador. Cualquier otro usuario entra como emprendedor.</p>
           </div>
-          <Button type="submit" className="w-full rounded-2xl bg-blue-500 text-black hover:bg-sky-300 py-6 text-xl font-bold">Entrar como {role}</Button>
+          <Button type="submit" className="w-full rounded-2xl bg-blue-500 text-black hover:bg-sky-300 py-6 font-bold">Ingresar</Button>
         </form>
       </div>
     </div>
@@ -295,6 +337,7 @@ function AdminDashboard({ emprendimientos, usuarios, planes, onNewBusiness, onNe
   return (
     <div className="space-y-6">
       <PageHeader title="Dashboard administrador" subtitle="Tu centro de control para usuarios, rubros, planes y soporte." buttonText="Nuevo emprendimiento" onButtonClick={onNewBusiness} secondaryButtonText="Nuevo usuario" secondaryOnClick={onNewUser} />
+      <HeroBanner title="Hola, Rodrigo 👋" subtitle="Bienvenido a C&R Emprende. Desde acá administrás usuarios, rubros, suscripciones y mensajes de soporte." />
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <StatCard icon={<Building2 />} label="Emprendimientos" value={emprendimientos.length} />
         <StatCard icon={<Users />} label="Usuarios" value={usuarios.length} />
@@ -322,7 +365,15 @@ function SoporteAdminPage({ emprendimientos, setSelectedEmpId, setActivePage }) 
 
 function ClienteDashboard({ emp, adminView, onBack }) {
   const productos = productosDemo.filter((p) => p.emprendimientoId === emp.id);
-  return <div className="space-y-6">{adminView && <button onClick={onBack} className="flex items-center gap-2 text-sm text-slate-200 hover:text-sky-300"><ArrowLeft className="w-4 h-4" /> Volver a soporte</button>}<PageHeader title={emp.nombre} subtitle={`Panel del emprendimiento · ${emp.id} · ${emp.rubro}`} /><div className="grid grid-cols-1 md:grid-cols-4 gap-4"><StatCard icon={<Package />} label="Productos" value={productos.length} /><StatCard icon={<ShoppingBag />} label="Ventas mes" value="$128.000" /><StatCard icon={<Users />} label="Clientes" value="18" /><StatCard icon={<DollarSign />} label="Ganancia" value="$52.000" /></div><Card><CardContent className="p-5"><h2 className="text-xl font-bold mb-3">Módulos activos</h2><div className="flex flex-wrap gap-2">{emp.modulos.map((m) => <Badge key={m}>{m}</Badge>)}</div></CardContent></Card></div>;
+  return (
+    <div className="space-y-6">
+      {adminView && <button onClick={onBack} className="flex items-center gap-2 text-sm text-slate-200 hover:text-sky-300"><ArrowLeft className="w-4 h-4" /> Volver a soporte</button>}
+      <HeroBanner title={`Bienvenido, ${emp.owner} 👋`} subtitle={`Gestioná ${emp.nombre} desde un solo lugar: stock, insumos, ventas, costos, presupuestos y mensajes con C&R.`} />
+      <PageHeader title={emp.nombre} subtitle={`Panel del emprendimiento · ${emp.id} · ${emp.rubro}`} />
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4"><StatCard icon={<Package />} label="Productos" value={productos.length} /><StatCard icon={<ShoppingBag />} label="Ventas mes" value="$128.000" /><StatCard icon={<Users />} label="Clientes" value="18" /><StatCard icon={<DollarSign />} label="Ganancia" value="$52.000" /></div>
+      <Card><CardContent className="p-5"><h2 className="text-xl font-bold mb-3">Módulos activos</h2><div className="flex flex-wrap gap-2">{emp.modulos.map((m) => <Badge key={m}>{m}</Badge>)}</div></CardContent></Card>
+    </div>
+  );
 }
 function ClienteProductos({ emp }) { const rows = productosDemo.filter((p) => p.emprendimientoId === emp.id).map((p) => [p.nombre, p.stock, money(p.costo), money(p.venta), p.estado]); return <DataPage title="Productos" subtitle="Productos terminados del emprendimiento." headers={["Producto", "Stock", "Costo", "Venta", "Estado"]} rows={rows} />; }
 function ClienteInsumos({ emp }) { const rows = insumosDemo.filter((i) => i.emprendimientoId === emp.id).map((i) => [i.nombre, money(i.costo), i.unidad, i.proveedor]); return <DataPage title="Insumos" subtitle="Insumos o materia prima para producir y calcular costos." headers={["Insumo", "Costo", "Unidad", "Proveedor"]} rows={rows} />; }
@@ -332,7 +383,130 @@ function ClienteConfiguracion({ emp, updateEmp, plan }) {
   const [local, setLocal] = useState(emp);
   function change(field, value) { setLocal((prev) => ({ ...prev, [field]: value })); }
   function toggleSupport(minutes) { setLocal((prev) => ({ ...prev, soporteRemoto: { habilitado: !prev.soporteRemoto.habilitado, vence: minutes } })); }
-  return <div className="space-y-6"><PageHeader title="Configuración" subtitle="Personalización del panel, datos comerciales y soporte remoto." /><div className="grid grid-cols-1 lg:grid-cols-2 gap-6"><Card><CardContent className="p-5 space-y-4"><h2 className="text-xl font-bold">Datos del emprendimiento</h2><InputField label="Nombre" value={local.nombre} onChange={(e) => change("nombre", e.target.value)} icon={<Building2 />} /><InputField label="WhatsApp" value={local.whatsapp} onChange={(e) => change("whatsapp", e.target.value)} icon={<Phone />} /><InputField label="Instagram" value={local.instagram} onChange={(e) => change("instagram", e.target.value)} icon={<Globe />} /><InputField label="Logo / iniciales" value={local.logo} onChange={(e) => change("logo", e.target.value)} icon={<Palette />} /><InputField label="Color principal" value={local.color} onChange={(e) => change("color", e.target.value)} icon={<Palette />} /><Button onClick={() => updateEmp(local)} className="w-full bg-blue-500 text-black py-6">Guardar configuración</Button></CardContent></Card><Card><CardContent className="p-5"><h2 className="text-xl font-bold mb-4">Soporte remoto</h2><p className="text-sm text-slate-200 mb-4">Disponible para plan Elite. El administrador solo puede entrar si vos lo habilitás por tiempo limitado.</p>{plan?.accesoAdmin ? <div className="space-y-3"><StatusBadge label={local.soporteRemoto.habilitado ? `Habilitado · ${local.soporteRemoto.vence}` : "Deshabilitado"} tone={local.soporteRemoto.habilitado ? "success" : "danger"} /><div className="grid grid-cols-2 gap-2">{["15 min", "30 min", "1 hora", "24 horas"].map((m) => <Button key={m} onClick={() => toggleSupport(m)} className="bg-slate-800 text-white">{m}</Button>)}</div><Button onClick={() => updateEmp(local)} className="w-full bg-blue-500 text-black">Guardar acceso</Button></div> : <StatusBadge label="No incluido en tu plan" tone="warning" />}</CardContent></Card></div></div>;
+  return <div className="space-y-6"><PageHeader title="Configuración" subtitle="Personalización del panel, datos comerciales y soporte remoto." /><div className="grid grid-cols-1 lg:grid-cols-2 gap-6"><Card><CardContent className="p-5 space-y-4"><h2 className="text-xl font-bold">Datos del emprendimiento</h2><InputField label="Nombre" value={local.nombre} onChange={(e) => change("nombre", e.target.value)} icon={<Building2 />} /><InputField label="WhatsApp" value={local.whatsapp} onChange={(e) => change("whatsapp", e.target.value)} icon={<Phone />} /><InputField label="Instagram" value={local.instagram} onChange={(e) => change("instagram", e.target.value)} icon={<Globe />} /><InputField label="Logo / iniciales o URL de imagen" value={local.logo} onChange={(e) => change("logo", e.target.value)} icon={<Palette />} /><InputField label="Color principal" value={local.color} onChange={(e) => change("color", e.target.value)} icon={<Palette />} /><Button onClick={() => updateEmp(local)} className="w-full bg-blue-500 text-black py-6">Guardar configuración</Button></CardContent></Card><Card><CardContent className="p-5"><h2 className="text-xl font-bold mb-4">Soporte remoto</h2><p className="text-sm text-slate-200 mb-4">Disponible para plan Elite. El administrador solo puede entrar si vos lo habilitás por tiempo limitado.</p>{plan?.accesoAdmin ? <div className="space-y-3"><StatusBadge label={local.soporteRemoto.habilitado ? `Habilitado · ${local.soporteRemoto.vence}` : "Deshabilitado"} tone={local.soporteRemoto.habilitado ? "success" : "danger"} /><div className="grid grid-cols-2 gap-2">{["15 min", "30 min", "1 hora", "24 horas"].map((m) => <Button key={m} onClick={() => toggleSupport(m)} className="bg-slate-800 text-white">{m}</Button>)}</div><Button onClick={() => updateEmp(local)} className="w-full bg-blue-500 text-black">Guardar acceso</Button></div> : <StatusBadge label="No incluido en tu plan" tone="warning" />}</CardContent></Card></div></div>;
+}
+
+
+function HeroBanner({ title, subtitle }) {
+  return (
+    <div className="relative overflow-hidden rounded-[2rem] border border-blue-500/25 bg-slate-950 p-6 md:p-8 shadow-2xl shadow-blue-950/30" style={{ backgroundImage: "linear-gradient(90deg, rgba(2,6,23,.92), rgba(2,6,23,.62), rgba(2,6,23,.88)), url('/fondo-saas.png')", backgroundSize: "cover", backgroundPosition: "center" }}>
+      <div className="relative z-10 max-w-3xl">
+        <p className="text-xs text-sky-300 font-bold uppercase tracking-[0.25em]">Plataforma de gestión</p>
+        <h2 className="text-3xl md:text-5xl font-black text-white mt-3 leading-tight">{title}</h2>
+        <p className="text-slate-200 mt-3 text-base md:text-lg leading-relaxed">{subtitle}</p>
+      </div>
+      <div className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-blue-500/20 blur-3xl" />
+      <div className="absolute -bottom-12 left-1/2 h-44 w-44 rounded-full bg-sky-400/10 blur-3xl" />
+    </div>
+  );
+}
+
+function WelcomeModal({ emp, onClose, onMessages }) {
+  return (
+    <ModalShell eyebrow="Bienvenido a C&R Emprende" title={`Hola, ${emp.owner}`} onClose={onClose}>
+      <div className="p-5 space-y-5">
+        <div className="rounded-[1.75rem] border border-blue-500/20 p-5" style={{ backgroundImage: "linear-gradient(90deg, rgba(2,6,23,.92), rgba(2,6,23,.72)), url('/fondo-saas.png')", backgroundSize: "cover", backgroundPosition: "center" }}>
+          <p className="text-slate-100 leading-relaxed">
+            Esta plataforma fue creada para ayudarte a ordenar tu emprendimiento, controlar stock, insumos, costos, clientes, ventas y presupuestos desde un solo lugar.
+          </p>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <ArchitectureRow icon={<Package />} title="Gestioná productos" text="Controlá lo que vendés, precios, stock y estado." />
+          <ArchitectureRow icon={<Boxes />} title="Ordená insumos" text="Registrá materia prima, costos y proveedores." />
+          <ArchitectureRow icon={<ClipboardList />} title="Calculá presupuestos" text="Usá costos reales para vender mejor." />
+          <ArchitectureRow icon={<Mail />} title="Mensajes con C&R" text="Consultanos desde la plataforma, sin chat en vivo." />
+        </div>
+        <div className="flex flex-col md:flex-row gap-3">
+          <Button onClick={onClose} className="w-full bg-blue-500 text-black py-4">Comenzar</Button>
+          <Button onClick={onMessages} className="w-full bg-slate-800 text-white py-4">Enviar mensaje a C&R</Button>
+        </div>
+      </div>
+    </ModalShell>
+  );
+}
+
+function MensajesAdminPage({ mensajes, emprendimientos }) {
+  return (
+    <div className="space-y-6">
+      <PageHeader title="Bandeja de mensajes" subtitle="Consultas internas entre C&R y cada emprendedor. No es chat en vivo: queda registro como ticket/mensaje." />
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <StatCard icon={<Mail />} label="Mensajes" value={mensajes.length} />
+        <StatCard icon={<AlertTriangle />} label="Nuevos" value={mensajes.filter((m) => m.estado === "Nuevo").length} />
+        <StatCard icon={<CheckCircle2 />} label="Respondidos" value={mensajes.filter((m) => m.estado === "Respondido").length} />
+      </div>
+      <Card>
+        <CardContent className="p-5 space-y-3">
+          <h2 className="text-xl font-bold text-white">Mensajes recibidos</h2>
+          {mensajes.map((m) => {
+            const emp = emprendimientos.find((e) => e.id === m.emprendimientoId);
+            return (
+              <div key={m.id} className="rounded-2xl bg-slate-950 border border-blue-500/20 p-4">
+                <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
+                  <div>
+                    <p className="text-xs text-sky-300 font-bold uppercase tracking-wide">{m.id} · {m.categoria}</p>
+                    <h3 className="text-lg font-bold text-white mt-1">{m.asunto}</h3>
+                    <p className="text-sm text-slate-300 mt-1">{emp?.nombre || m.emprendimientoId} · enviado por {m.de}</p>
+                  </div>
+                  <StatusBadge label={m.estado} tone={m.estado === "Nuevo" ? "warning" : "success"} />
+                </div>
+                <p className="text-slate-100 mt-3">{m.mensaje}</p>
+                <p className="text-xs text-slate-400 mt-3">{m.fecha}</p>
+              </div>
+            );
+          })}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+function ClienteMensajesPage({ emp, mensajes, onSend }) {
+  const [form, setForm] = useState({ categoria: "Consulta", asunto: "", mensaje: "" });
+  function submit(e) {
+    e.preventDefault();
+    if (!form.asunto || !form.mensaje) return;
+    onSend({ emprendimientoId: emp.id, de: emp.owner, categoria: form.categoria, asunto: form.asunto, mensaje: form.mensaje });
+    setForm({ categoria: "Consulta", asunto: "", mensaje: "" });
+  }
+  return (
+    <div className="space-y-6">
+      <PageHeader title="Mensajes C&R" subtitle="Comunicate con C&R desde la plataforma. No es chat en vivo: enviás un mensaje y queda registro." />
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card>
+          <CardContent className="p-5">
+            <h2 className="text-xl font-bold text-white mb-4">Nuevo mensaje</h2>
+            <form onSubmit={submit} className="space-y-4">
+              <SelectField label="Tipo de mensaje" value={form.categoria} onChange={(e) => setForm({ ...form, categoria: e.target.value })} options={["Consulta", "Problema técnico", "Sugerencia", "Solicitud de mejora", "Capacitación", "Otro"]} />
+              <InputField icon={<Mail />} label="Asunto" value={form.asunto} onChange={(e) => setForm({ ...form, asunto: e.target.value })} placeholder="Ej: Necesito ayuda con un presupuesto" />
+              <div>
+                <label className="block text-sm text-sky-300 font-semibold mb-2">Mensaje</label>
+                <textarea value={form.mensaje} onChange={(e) => setForm({ ...form, mensaje: e.target.value })} placeholder="Contanos qué necesitás..." className="w-full min-h-36 rounded-xl bg-slate-950 border border-slate-700 outline-none focus:border-sky-300 p-3 text-white" />
+              </div>
+              <Button type="submit" className="w-full bg-blue-500 text-black py-4"><Send className="w-4 h-4 mr-2" /> Enviar mensaje</Button>
+            </form>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-5 space-y-3">
+            <h2 className="text-xl font-bold text-white">Historial</h2>
+            {mensajes.length === 0 ? <p className="text-sm text-slate-200">Todavía no enviaste mensajes.</p> : mensajes.map((m) => (
+              <div key={m.id} className="rounded-2xl bg-slate-950 border border-blue-500/20 p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-xs text-sky-300 font-bold uppercase tracking-wide">{m.categoria}</p>
+                    <p className="font-bold text-white mt-1">{m.asunto}</p>
+                  </div>
+                  <StatusBadge label={m.estado} tone={m.estado === "Nuevo" ? "warning" : "success"} />
+                </div>
+                <p className="text-sm text-slate-200 mt-2">{m.mensaje}</p>
+                <p className="text-xs text-slate-400 mt-2">{m.fecha}</p>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
 }
 
 function BusinessWizard({ rubros, planes, onClose, onCreate }) {
@@ -346,7 +520,7 @@ function BusinessWizard({ rubros, planes, onClose, onCreate }) {
 function UsuarioModal({ emprendimientos, onClose, onCreate }) { const [f,setF]=useState({nombre:"", email:"", rol:"Dueño", emp: emprendimientos[0]?.id || "", password:"123456"}); function create(){onCreate({id:`USR-${Date.now().toString().slice(-4)}`, nombre:f.nombre||"Nuevo usuario", email:f.email, rol:f.rol, emprendimientoIds:[f.emp], estado:"Activo", password:f.password});} return <ModalShell eyebrow="Alta de usuario" title="Nuevo usuario" onClose={onClose}><div className="p-5 space-y-4"><InputField icon={<Users />} label="Nombre" value={f.nombre} onChange={(e)=>setF({...f,nombre:e.target.value})}/><InputField icon={<Globe />} label="Email" value={f.email} onChange={(e)=>setF({...f,email:e.target.value})}/><InputField icon={<KeyRound />} label="Contraseña temporal" value={f.password} onChange={(e)=>setF({...f,password:e.target.value})}/><SelectField label="Rol" value={f.rol} onChange={(e)=>setF({...f,rol:e.target.value})} options={["Dueño","Administrador","Operador","Vendedor"]}/><SelectField label="Emprendimiento" value={f.emp} onChange={(e)=>setF({...f,emp:e.target.value})} options={emprendimientos.map(e=>e.id)} labels={Object.fromEntries(emprendimientos.map(e=>[e.id, `${e.nombre} · ${e.id}`]))}/><div className="flex gap-3"><Button onClick={onClose} className="w-full bg-slate-800 text-white">Cancelar</Button><Button onClick={create} className="w-full bg-blue-500 text-black">Crear usuario</Button></div></div></ModalShell> }
 
 function DataPage({ title, subtitle, headers, rows }) { return <div className="space-y-6"><PageHeader title={title} subtitle={subtitle} /><Card><CardContent className="p-5 overflow-x-auto"><table className="w-full text-sm"><TableHead headers={headers} /><tbody>{rows.map((row,i)=><tr key={i} className="border-b border-slate-800">{row.map((c,j)=><td key={j} className="py-4 pr-4 text-slate-100">{c}</td>)}</tr>)}</tbody></table></CardContent></Card></div> }
-function PageHeader({ title, subtitle, buttonText, onButtonClick, secondaryButtonText, secondaryOnClick }) { return <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4"><div><p className="text-sm text-sky-300 font-bold uppercase tracking-wide">C&R Emprende</p><h1 className="text-3xl md:text-4xl font-bold tracking-tight">{title}</h1><p className="text-slate-200 mt-2">{subtitle}</p></div><div className="flex gap-2">{secondaryButtonText&&<Button onClick={secondaryOnClick} className="bg-slate-800 text-white">{secondaryButtonText}</Button>}{buttonText&&<Button onClick={onButtonClick} className="bg-blue-500 text-black"><Users className="w-4 h-4 mr-2" />{buttonText}</Button>}</div></div> }
+function PageHeader({ title, subtitle, buttonText, onButtonClick, secondaryButtonText, secondaryOnClick }) { return <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4"><div><h1 className="text-3xl md:text-4xl font-bold tracking-tight">{title}</h1><p className="text-slate-200 mt-2">{subtitle}</p></div><div className="flex gap-2">{secondaryButtonText&&<Button onClick={secondaryOnClick} className="bg-slate-800 text-white">{secondaryButtonText}</Button>}{buttonText&&<Button onClick={onButtonClick} className="bg-blue-500 text-black"><Users className="w-4 h-4 mr-2" />{buttonText}</Button>}</div></div> }
 function SidebarButton({ active, icon, label, onClick }) { return <button onClick={onClick} className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold transition ${active ? "bg-blue-500 text-black" : "text-slate-100 hover:bg-slate-900"}`}>{React.cloneElement(icon,{className:"w-5 h-5"})}{label}</button> }
 function Card({ children, className="" }) { return <div className={`premium-card rounded-3xl ${className}`}>{children}</div> }
 function CardContent({ children, className="" }) { return <div className={className}>{children}</div> }
