@@ -3602,7 +3602,10 @@ function UsuarioModal({ rubros, planes, onClose, onCreate }) {
     setF((prev) => ({ ...prev, [field]: value }));
   }
 
-  function create() {
+  function create(event) {
+    if (event && event.preventDefault) {
+      event.preventDefault();
+    }
     if (!f.nombre.trim()) {
       setError("Ingresá nombre y apellido del usuario.");
       return;
@@ -3619,8 +3622,11 @@ function UsuarioModal({ rubros, planes, onClose, onCreate }) {
       setError("La contraseña debe tener mínimo 6 caracteres.");
       return;
     }
-
     const demoDays = Number(f.demoDuracionDias) || 7;
+    if (f.esDemo && demoDays <= 0) {
+      setError("Ingresá una duración válida para el demo.");
+      return;
+    }
     const demoExpiresOn = f.esDemo ? addDaysFromToday(demoDays) : null;
 
     onCreate({
