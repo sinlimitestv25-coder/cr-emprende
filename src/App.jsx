@@ -646,6 +646,7 @@ function App() {
 
   function markCommissionNoticeSeen(userId) {
     setUsuarios((prev) => prev.map((u) => u.id === userId ? { ...u, commissionNoticeVersion: commissionSettings.version } : u));
+    setCurrentUser((prev) => prev?.id === userId ? { ...prev, commissionNoticeVersion: commissionSettings.version } : prev);
   }
 
   function registerPortalSale(consultaId, saleAmount) {
