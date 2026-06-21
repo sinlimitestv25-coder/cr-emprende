@@ -248,6 +248,8 @@ const exhibicionInicial = [
 const STORAGE_KEYS = {
   publicaciones: "cr-emprende-publicaciones",
   consultasPortal: "cr-emprende-consultas-portal",
+  portalConfig: "cr-emprende-portal-config",
+  portalViews: "cr-emprende-portal-views",
 };
 
 function loadStoredValue(key, fallback) {
@@ -267,6 +269,13 @@ function saveStoredValue(key, value) {
   } catch {
     // Local storage can fail in restricted browsing modes.
   }
+}
+
+function getDefaultPortalConfig(emp) {
+  return {
+    descripcion: `Conocé las publicaciones de ${emp?.nombre || "este emprendimiento"} y consultá directo por WhatsApp.`,
+    color: "cyan",
+  };
 }
 
 
@@ -343,6 +352,17 @@ function normalizePhoneForWhatsApp(value) {
   return `54${digits}`;
 }
 
+function getPortalTheme(color) {
+  const themes = {
+    cyan: { overlay: "rgba(8,145,178,.58)" },
+    violet: { overlay: "rgba(124,58,237,.58)" },
+    emerald: { overlay: "rgba(5,150,105,.58)" },
+    amber: { overlay: "rgba(217,119,6,.50)" },
+    rose: { overlay: "rgba(225,29,72,.52)" },
+  };
+  return themes[color] || themes.cyan;
+}
+
 function addMinutesFromNow(minutes) {
   const date = new Date();
   date.setMinutes(date.getMinutes() + Number(minutes));
@@ -402,6 +422,8 @@ function App() {
   const [historialComercial, setHistorialComercial] = useState([]);
   const [publicaciones, setPublicaciones] = useState(() => loadStoredValue(STORAGE_KEYS.publicaciones, exhibicionInicial));
   const [consultasPortal, setConsultasPortal] = useState(() => loadStoredValue(STORAGE_KEYS.consultasPortal, []));
+  const [portalConfig, setPortalConfig] = useState(() => loadStoredValue(STORAGE_KEYS.portalConfig, {}));
+  const [portalViews, setPortalViews] = useState(() => loadStoredValue(STORAGE_KEYS.portalViews, {}));
 
   const selectedEmp = emprendimientos.find((e) => e.id === selectedEmpId) || emprendimientos[0];
   const isAdmin = loginRole === "Super Admin";
@@ -443,6 +465,14 @@ function App() {
   }, [consultasPortal]);
 
   useEffect(() => {
+    saveStoredValue(STORAGE_KEYS.portalConfig, portalConfig);
+  }, [portalConfig]);
+
+  useEffect(() => {
+    saveStoredValue(STORAGE_KEYS.portalViews, portalViews);
+  }, [portalViews]);
+
+  useEffect(() => {
     if (typeof window === "undefined") return undefined;
     function syncPortalStorage(event) {
       if (event.key === STORAGE_KEYS.publicaciones) {
@@ -450,6 +480,12 @@ function App() {
       }
       if (event.key === STORAGE_KEYS.consultasPortal) {
         setConsultasPortal(loadStoredValue(STORAGE_KEYS.consultasPortal, []));
+      }
+      if (event.key === STORAGE_KEYS.portalConfig) {
+        setPortalConfig(loadStoredValue(STORAGE_KEYS.portalConfig, {}));
+      }
+      if (event.key === STORAGE_KEYS.portalViews) {
+        setPortalViews(loadStoredValue(STORAGE_KEYS.portalViews, {}));
       }
     }
     window.addEventListener("storage", syncPortalStorage);
@@ -559,6 +595,21 @@ function App() {
     setConsultasPortal((prev) => prev.map((consulta) => consulta.id === consultaId ? { ...consulta, ...changes } : consulta));
   }
 
+  function updatePortalConfig(empId, changes) {
+    setPortalConfig((prev) => ({
+      ...prev,
+      [empId]: {
+        ...getDefaultPortalConfig(emprendimientos.find((e) => e.id === empId)),
+        ...(prev[empId] || {}),
+        ...changes,
+      },
+    }));
+  }
+
+  function registerPortalView(empId) {
+    setPortalViews((prev) => ({ ...prev, [empId]: Number(prev[empId] || 0) + 1 }));
+  }
+
   function replyMensaje(mensajeId, respuesta) {
     setMensajes((prev) =>
       prev.map((m) =>
@@ -619,7 +670,9 @@ function App() {
       <PortalPublico
         emp={emprendimientos.find((e) => e.id === portalEmpIdFromUrl)}
         publicaciones={publicaciones.filter((item) => item.emprendimientoId === portalEmpIdFromUrl && item.estado === "Visible")}
+        config={portalConfig[portalEmpIdFromUrl] || getDefaultPortalConfig(emprendimientos.find((e) => e.id === portalEmpIdFromUrl))}
         onConsulta={addPortalConsulta}
+        onView={registerPortalView}
       />
     );
   }
@@ -702,7 +755,7 @@ function App() {
           {!isAdmin && activePage === "proveedores" && <ClienteProveedores emp={selectedEmp} />}
           {!isAdmin && activePage === "recetas" && <ClienteRecetas emp={selectedEmp} />}
           {!isAdmin && activePage === "clientes" && <ClienteClientes emp={selectedEmp} potenciales={consultasPortal.filter((consulta) => consulta.emprendimientoId === selectedEmp.id && consulta.estado === "Potencial")} />}
-          {!isAdmin && activePage === "exhibicion" && <ClienteExhibicion emp={selectedEmp} publicaciones={publicaciones.filter((item) => item.emprendimientoId === selectedEmp.id)} consultas={consultasPortal.filter((consulta) => consulta.emprendimientoId === selectedEmp.id)} setPublicaciones={setPublicaciones} onUpdateConsulta={updatePortalConsulta} />}
+          {!isAdmin && activePage === "exhibicion" && <ClienteExhibicion emp={selectedEmp} publicaciones={publicaciones.filter((item) => item.emprendimientoId === selectedEmp.id)} consultas={consultasPortal.filter((consulta) => consulta.emprendimientoId === selectedEmp.id)} portalConfig={portalConfig[selectedEmp.id] || getDefaultPortalConfig(selectedEmp)} portalViews={portalViews[selectedEmp.id] || 0} setPublicaciones={setPublicaciones} onUpdateConsulta={updatePortalConsulta} onUpdatePortalConfig={updatePortalConfig} />}
           {!isAdmin && activePage === "presupuestos" && <ClientePresupuestos emp={selectedEmp} />}
           {!isAdmin && activePage === "pedidos" && <ClientePedidos emp={selectedEmp} />}
           {!isAdmin && activePage === "finanzas" && <ClienteFinanzas emp={selectedEmp} />}
@@ -857,10 +910,14 @@ function LoginScreen({ email, setEmail, password, setPassword, error, onLogin })
   );
 }
 
-function PortalPublico({ emp, publicaciones, onConsulta }) {
+function PortalPublico({ emp, publicaciones, config, onConsulta, onView }) {
   const [selectedPublication, setSelectedPublication] = useState(null);
   const [form, setForm] = useState({ nombre: "", whatsapp: "", mensaje: "" });
   const [sent, setSent] = useState(false);
+
+  useEffect(() => {
+    if (emp?.id) onView(emp.id);
+  }, [emp?.id]);
 
   if (!emp) {
     return (
@@ -893,15 +950,27 @@ function PortalPublico({ emp, publicaciones, onConsulta }) {
     setSent(true);
   }
 
+  const theme = getPortalTheme(config?.color);
+
   return (
     <div className="min-h-screen bg-slate-950 text-white">
-      <section className="relative overflow-hidden border-b border-white/10 p-6 md:p-10" style={{ backgroundImage: "linear-gradient(90deg, rgba(2,6,23,.92), rgba(2,6,23,.70)), url('/fondo-saas.png')", backgroundSize: "cover", backgroundPosition: "center" }}>
+      <section className="relative overflow-hidden border-b border-white/10 p-6 md:p-10" style={{ backgroundImage: `linear-gradient(90deg, rgba(2,6,23,.94), ${theme.overlay}), url('/fondo-saas.png')`, backgroundSize: "cover", backgroundPosition: "center" }}>
         <div className="mx-auto max-w-6xl">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-5">
+          <div className="mb-8 flex items-center justify-between gap-4">
+            <div className="inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-white/10 px-3 py-2">
+              <img src="/logo-cr.png" alt="C&R Emprende" className="h-8 w-auto rounded bg-white/90 px-1" />
+              <span className="text-xs font-black uppercase tracking-[0.18em] text-sky-200">Emprende</span>
+            </div>
+            <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-2xl border border-white/15 bg-white/12 text-xl font-black text-white">
+              {emp.logo?.startsWith("/") || emp.logo?.startsWith("http") ? <img src={emp.logo} alt={emp.nombre} className="h-full w-full object-cover" /> : emp.logo || emp.nombre.slice(0, 2)}
+            </div>
+          </div>
+          <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-5">
             <div>
               <p className="text-xs font-black uppercase tracking-[0.24em] text-sky-300">Portal de exhibición</p>
               <h1 className="mt-3 text-4xl md:text-5xl font-black">{emp.nombre}</h1>
-              <p className="mt-3 max-w-2xl text-slate-200">{emp.rubro} · {emp.actividad}</p>
+              <p className="mt-3 max-w-2xl text-slate-200">{config?.descripcion || getDefaultPortalConfig(emp).descripcion}</p>
+              <p className="mt-2 text-sm text-slate-400">{emp.rubro} · {emp.actividad}</p>
             </div>
             <div className="rounded-3xl border border-white/10 bg-white/10 p-4 text-sm text-slate-100">
               <p className="font-black text-white">Contacto</p>
@@ -3179,12 +3248,13 @@ function ClienteRecetas({ emp }) {
   );
 }
 
-function ClienteExhibicion({ emp, publicaciones, consultas, setPublicaciones, onUpdateConsulta }) {
+function ClienteExhibicion({ emp, publicaciones, consultas, portalConfig, portalViews, setPublicaciones, onUpdateConsulta, onUpdatePortalConfig }) {
   const [showNewPublication, setShowNewPublication] = useState(false);
   const [newPublication, setNewPublication] = useState({ titulo: "", descripcion: "", precio: "", categoria: "", estado: "Visible", imagen: "" });
   const portalUrl = typeof window !== "undefined" ? `${window.location.origin}${window.location.pathname}?portal=${encodeURIComponent(emp.id)}` : `?portal=${emp.id}`;
   const visibles = publicaciones.filter((item) => item.estado === "Visible").length;
   const nuevas = consultas.filter((consulta) => consulta.estado === "Nueva").length;
+  const concretadas = consultas.filter((consulta) => consulta.estado === "Venta concretada").length;
 
   async function copyPortalLink() {
     try {
@@ -3236,7 +3306,7 @@ function ClienteExhibicion({ emp, publicaciones, consultas, setPublicaciones, on
         <ColorStatCard icon={<Eye />} label="Publicaciones" value={publicaciones.length} color="from-sky-400 via-blue-500 to-indigo-600" />
         <ColorStatCard icon={<CheckCircle2 />} label="Visibles" value={visibles} color="from-emerald-400 via-teal-500 to-cyan-500" />
         <ColorStatCard icon={<MessageCircle />} label="Consultas nuevas" value={nuevas} color="from-amber-300 via-orange-500 to-red-500" />
-        <ColorStatCard icon={<Users />} label="Potenciales" value={consultas.filter((c) => c.estado === "Potencial").length} color="from-violet-500 via-purple-500 to-fuchsia-500" />
+        <ColorStatCard icon={<Eye />} label="Vistas portal" value={portalViews} color="from-violet-500 via-purple-500 to-fuchsia-500" />
       </div>
 
       <Card>
@@ -3253,6 +3323,32 @@ function ClienteExhibicion({ emp, publicaciones, consultas, setPublicaciones, on
           </div>
         </CardContent>
       </Card>
+
+      <div className="grid grid-cols-1 xl:grid-cols-[.9fr_.7fr] gap-5">
+        <Card>
+          <CardContent className="p-5 space-y-4">
+            <div>
+              <h2 className="text-xl font-black text-white">Configuración del portal</h2>
+              <p className="text-sm text-slate-300 mt-1">Texto y color visible para cualquier persona que abra el link público.</p>
+            </div>
+            <div>
+              <label className="text-sm font-bold text-slate-200 mb-2 block">Descripción pública</label>
+              <textarea value={portalConfig.descripcion} onChange={(e) => onUpdatePortalConfig(emp.id, { descripcion: e.target.value })} className="w-full min-h-[100px] rounded-2xl bg-slate-950/70 border border-white/10 px-4 py-3 text-white outline-none focus:border-sky-400" />
+            </div>
+            <SelectField label="Color del portal" value={portalConfig.color} onChange={(e) => onUpdatePortalConfig(emp.id, { color: e.target.value })} options={["cyan", "violet", "emerald", "amber", "rose"]} labels={{ cyan: "Cyan / azul", violet: "Violeta", emerald: "Verde", amber: "Dorado", rose: "Rosa" }} />
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-5 space-y-4">
+            <h2 className="text-xl font-black text-white">Movimiento del portal</h2>
+            <div className="grid grid-cols-2 gap-3">
+              <DetailBox icon={<Eye />} label="Vistas" value={portalViews} />
+              <DetailBox icon={<CheckCircle2 />} label="Ventas" value={concretadas} />
+            </div>
+            <p className="text-sm text-slate-300">Las ventas concretadas quedan marcadas en consultas. La comisión la agregamos en la siguiente etapa.</p>
+          </CardContent>
+        </Card>
+      </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-[1.1fr_.9fr] gap-5">
         <Card>
@@ -3285,6 +3381,7 @@ function ClienteExhibicion({ emp, publicaciones, consultas, setPublicaciones, on
                   <div className="flex flex-wrap gap-2 mt-3">
                     <Button type="button" onClick={() => openWhatsApp(consulta)} className="bg-green-500 text-black px-3 py-2 text-xs"><MessageCircle className="w-3 h-3 mr-1" />Responder</Button>
                     <Button type="button" onClick={() => onUpdateConsulta(consulta.id, { estado: "Potencial" })} className="bg-violet-500/20 text-violet-100 border border-violet-300/20 px-3 py-2 text-xs">Convertir en potencial</Button>
+                    <Button type="button" onClick={() => onUpdateConsulta(consulta.id, { estado: "Venta concretada" })} className="bg-emerald-500/20 text-emerald-100 border border-emerald-300/20 px-3 py-2 text-xs">Venta concretada</Button>
                     <Button type="button" onClick={() => onUpdateConsulta(consulta.id, { estado: "Cerrada" })} className="bg-slate-800 text-white px-3 py-2 text-xs">Cerrar</Button>
                   </div>
                 </div>
