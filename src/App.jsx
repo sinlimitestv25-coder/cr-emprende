@@ -250,6 +250,8 @@ const STORAGE_KEYS = {
   consultasPortal: "cr-emprende-consultas-portal",
   portalConfig: "cr-emprende-portal-config",
   portalViews: "cr-emprende-portal-views",
+  commissionSettings: "cr-emprende-commission-settings",
+  portalCommissions: "cr-emprende-portal-commissions",
 };
 
 function loadStoredValue(key, fallback) {
@@ -277,6 +279,13 @@ function getDefaultPortalConfig(emp) {
     color: "cyan",
   };
 }
+
+const defaultCommissionSettings = {
+  porcentaje: 1,
+  limiteMensual: 10000,
+  version: 1,
+  updatedAt: "",
+};
 
 
 function parseEsDate(dateText) {
@@ -424,6 +433,8 @@ function App() {
   const [consultasPortal, setConsultasPortal] = useState(() => loadStoredValue(STORAGE_KEYS.consultasPortal, []));
   const [portalConfig, setPortalConfig] = useState(() => loadStoredValue(STORAGE_KEYS.portalConfig, {}));
   const [portalViews, setPortalViews] = useState(() => loadStoredValue(STORAGE_KEYS.portalViews, {}));
+  const [commissionSettings, setCommissionSettings] = useState(() => loadStoredValue(STORAGE_KEYS.commissionSettings, defaultCommissionSettings));
+  const [portalCommissions, setPortalCommissions] = useState(() => loadStoredValue(STORAGE_KEYS.portalCommissions, []));
 
   const selectedEmp = emprendimientos.find((e) => e.id === selectedEmpId) || emprendimientos[0];
   const isAdmin = loginRole === "Super Admin";
@@ -473,6 +484,14 @@ function App() {
   }, [portalViews]);
 
   useEffect(() => {
+    saveStoredValue(STORAGE_KEYS.commissionSettings, commissionSettings);
+  }, [commissionSettings]);
+
+  useEffect(() => {
+    saveStoredValue(STORAGE_KEYS.portalCommissions, portalCommissions);
+  }, [portalCommissions]);
+
+  useEffect(() => {
     if (typeof window === "undefined") return undefined;
     function syncPortalStorage(event) {
       if (event.key === STORAGE_KEYS.publicaciones) {
@@ -486,6 +505,12 @@ function App() {
       }
       if (event.key === STORAGE_KEYS.portalViews) {
         setPortalViews(loadStoredValue(STORAGE_KEYS.portalViews, {}));
+      }
+      if (event.key === STORAGE_KEYS.commissionSettings) {
+        setCommissionSettings(loadStoredValue(STORAGE_KEYS.commissionSettings, defaultCommissionSettings));
+      }
+      if (event.key === STORAGE_KEYS.portalCommissions) {
+        setPortalCommissions(loadStoredValue(STORAGE_KEYS.portalCommissions, []));
       }
     }
     window.addEventListener("storage", syncPortalStorage);
@@ -608,6 +633,52 @@ function App() {
 
   function registerPortalView(empId) {
     setPortalViews((prev) => ({ ...prev, [empId]: Number(prev[empId] || 0) + 1 }));
+  }
+
+  function updateCommissionSettings(next) {
+    setCommissionSettings((prev) => ({
+      ...prev,
+      ...next,
+      version: Number(prev.version || 1) + 1,
+      updatedAt: new Date().toLocaleString("es-AR", { dateStyle: "short", timeStyle: "short" }),
+    }));
+  }
+
+  function markCommissionNoticeSeen(userId) {
+    setUsuarios((prev) => prev.map((u) => u.id === userId ? { ...u, commissionNoticeVersion: commissionSettings.version } : u));
+  }
+
+  function registerPortalSale(consultaId, saleAmount) {
+    const consulta = consultasPortal.find((item) => item.id === consultaId);
+    if (!consulta) return;
+    const existingMonthTotal = portalCommissions
+      .filter((item) => item.emprendimientoId === consulta.emprendimientoId && item.estado !== "Pagada")
+      .reduce((acc, item) => acc + Number(item.comision || 0), 0);
+    const rawCommission = Math.round(Number(saleAmount || 0) * (Number(commissionSettings.porcentaje || 0) / 100));
+    const available = Math.max(0, Number(commissionSettings.limiteMensual || 0) - existingMonthTotal);
+    const commission = Math.min(rawCommission, available);
+    const sale = {
+      id: `COM-${Date.now().toString().slice(-6)}`,
+      consultaId,
+      emprendimientoId: consulta.emprendimientoId,
+      usuario: consulta.nombre,
+      publicacionTitulo: consulta.publicacionTitulo,
+      venta: Number(saleAmount || 0),
+      porcentaje: Number(commissionSettings.porcentaje || 0),
+      comision: commission,
+      limiteMensual: Number(commissionSettings.limiteMensual || 0),
+      estado: "Pendiente",
+      fecha: new Date().toLocaleString("es-AR", { dateStyle: "short", timeStyle: "short" }),
+    };
+    setPortalCommissions((prev) => [sale, ...prev]);
+    updatePortalConsulta(consultaId, { estado: "Venta concretada", venta: sale.venta, comision: sale.comision });
+    registerCommercialEvent({
+      usuario: consulta.nombre,
+      tipo: "Venta por portal",
+      accion: "Venta concretada",
+      estado: "Pendiente",
+      nota: `${consulta.publicacionTitulo}: venta ${money(sale.venta)}, comisión ${money(sale.comision)} (${sale.porcentaje}%).`,
+    });
   }
 
   function replyMensaje(mensajeId, respuesta) {
@@ -745,7 +816,7 @@ function App() {
           {isAdmin && activePage === "rubros" && <RubrosManagerPage rubros={rubros} modules={modulesBase} onChange={setRubros} />}
           {isAdmin && activePage === "modulos" && <ModulosPage modules={modulesBase} rubros={rubros} />}
           {isAdmin && activePage === "planes" && <PlanesPage planes={planes} />}
-          {isAdmin && activePage === "suscripciones" && <SuscripcionesPage emprendimientos={emprendimientos} planes={planes} historialComercial={historialComercial} />}
+          {isAdmin && activePage === "suscripciones" && <SuscripcionesPage emprendimientos={emprendimientos} planes={planes} historialComercial={historialComercial} commissionSettings={commissionSettings} onUpdateCommissionSettings={updateCommissionSettings} portalCommissions={portalCommissions} />}
           {isAdmin && activePage === "soporte" && <SoporteAdminPage emprendimientos={emprendimientos} setSelectedEmpId={setSelectedEmpId} setActivePage={setActivePage} />}
           {isAdmin && activePage === "mensajes" && <MensajesAdminPage mensajes={mensajes} emprendimientos={emprendimientos} onReply={replyMensaje} />}
 
@@ -755,7 +826,7 @@ function App() {
           {!isAdmin && activePage === "proveedores" && <ClienteProveedores emp={selectedEmp} />}
           {!isAdmin && activePage === "recetas" && <ClienteRecetas emp={selectedEmp} />}
           {!isAdmin && activePage === "clientes" && <ClienteClientes emp={selectedEmp} potenciales={consultasPortal.filter((consulta) => consulta.emprendimientoId === selectedEmp.id && consulta.estado === "Potencial")} />}
-          {!isAdmin && activePage === "exhibicion" && <ClienteExhibicion emp={selectedEmp} publicaciones={publicaciones.filter((item) => item.emprendimientoId === selectedEmp.id)} consultas={consultasPortal.filter((consulta) => consulta.emprendimientoId === selectedEmp.id)} portalConfig={portalConfig[selectedEmp.id] || getDefaultPortalConfig(selectedEmp)} portalViews={portalViews[selectedEmp.id] || 0} setPublicaciones={setPublicaciones} onUpdateConsulta={updatePortalConsulta} onUpdatePortalConfig={updatePortalConfig} />}
+          {!isAdmin && activePage === "exhibicion" && <ClienteExhibicion emp={selectedEmp} publicaciones={publicaciones.filter((item) => item.emprendimientoId === selectedEmp.id)} consultas={consultasPortal.filter((consulta) => consulta.emprendimientoId === selectedEmp.id)} portalConfig={portalConfig[selectedEmp.id] || getDefaultPortalConfig(selectedEmp)} portalViews={portalViews[selectedEmp.id] || 0} commissionSettings={commissionSettings} portalCommissions={portalCommissions.filter((item) => item.emprendimientoId === selectedEmp.id)} setPublicaciones={setPublicaciones} onUpdateConsulta={updatePortalConsulta} onUpdatePortalConfig={updatePortalConfig} onRegisterSale={registerPortalSale} />}
           {!isAdmin && activePage === "presupuestos" && <ClientePresupuestos emp={selectedEmp} />}
           {!isAdmin && activePage === "pedidos" && <ClientePedidos emp={selectedEmp} />}
           {!isAdmin && activePage === "finanzas" && <ClienteFinanzas emp={selectedEmp} />}
@@ -770,6 +841,7 @@ function App() {
 
       {showDemoExpired && !isAdmin && expiredDemoUser && <DemoExpiredModal user={expiredDemoUser} onClose={closeDemoExpired} />}
       {showWelcome && !isAdmin && <WelcomeModal emp={selectedEmp} onClose={() => setShowWelcome(false)} onMessages={() => { setShowWelcome(false); setActivePage("mensajes"); }} />}
+      {!isAdmin && currentUser && commissionSettings.updatedAt && (currentUser.commissionNoticeVersion || 0) < commissionSettings.version && <CommissionNoticeModal settings={commissionSettings} onClose={() => markCommissionNoticeSeen(currentUser.id)} />}
       {isBusinessWizardOpen && <BusinessWizard rubros={rubros} planes={planes} modules={modulesBase} onClose={() => setIsBusinessWizardOpen(false)} onCreate={(nuevo) => { setEmprendimientos((prev) => [nuevo, ...prev]); setIsBusinessWizardOpen(false); setActivePage("emprendimientos"); }} />}
       {isUserModalOpen && <UsuarioModal rubros={rubros} planes={planes} onClose={() => setIsUserModalOpen(false)} onCreate={(nuevo) => { setUsuarios((prev) => [nuevo, ...prev]); setIsUserModalOpen(false); }} />}
     </div>
@@ -831,6 +903,20 @@ function DemoCountdownBanner({ remainingMs, expiresOn }) {
         <p className="text-xs text-slate-300">Finaliza {formatDateTime(expiresOn)}</p>
       </div>
     </div>
+  );
+}
+
+function CommissionNoticeModal({ settings, onClose }) {
+  return (
+    <ModalShell eyebrow="Condiciones del portal" title="Actualización de comisión" onClose={onClose}>
+      <div className="p-5 space-y-4">
+        <div className="rounded-2xl border border-amber-400/20 bg-amber-400/10 p-4 text-sm text-amber-100">
+          Se actualizaron las condiciones comerciales del portal de exhibición. La comisión vigente es de <b>{settings.porcentaje}%</b> por venta concretada desde el portal, con un límite mensual de <b>{money(settings.limiteMensual)}</b>.
+        </div>
+        {settings.updatedAt && <p className="text-sm text-slate-300">Última actualización: {settings.updatedAt}</p>}
+        <Button type="button" onClick={onClose} className="w-full bg-blue-500 text-black">Entendido</Button>
+      </div>
+    </ModalShell>
   );
 }
 
@@ -954,22 +1040,22 @@ function PortalPublico({ emp, publicaciones, config, onConsulta, onView }) {
 
   return (
     <div className="min-h-screen bg-slate-950 text-white">
-      <section className="relative overflow-hidden border-b border-white/10 p-6 md:p-10" style={{ backgroundImage: `linear-gradient(90deg, rgba(2,6,23,.94), ${theme.overlay}), url('/fondo-saas.png')`, backgroundSize: "cover", backgroundPosition: "center" }}>
+      <section className="relative overflow-hidden border-b border-white/10 px-5 py-4 md:px-8 md:py-5" style={{ backgroundImage: `linear-gradient(90deg, rgba(2,6,23,.94), ${theme.overlay}), url('/fondo-saas.png')`, backgroundSize: "cover", backgroundPosition: "center" }}>
         <div className="mx-auto max-w-6xl">
-          <div className="mb-8 flex items-center justify-between gap-4">
+          <div className="mb-4 flex items-center justify-between gap-4">
             <div className="inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-white/10 px-3 py-2">
               <img src="/logo-cr.png" alt="C&R Emprende" className="h-8 w-auto rounded bg-white/90 px-1" />
               <span className="text-xs font-black uppercase tracking-[0.18em] text-sky-200">Emprende</span>
             </div>
-            <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-2xl border border-white/15 bg-white/12 text-xl font-black text-white">
+            <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-2xl border border-white/15 bg-white/12 text-2xl font-black text-white">
               {emp.logo?.startsWith("/") || emp.logo?.startsWith("http") ? <img src={emp.logo} alt={emp.nombre} className="h-full w-full object-cover" /> : emp.logo || emp.nombre.slice(0, 2)}
             </div>
           </div>
           <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-5">
             <div>
               <p className="text-xs font-black uppercase tracking-[0.24em] text-sky-300">Portal de exhibición</p>
-              <h1 className="mt-3 text-4xl md:text-5xl font-black">{emp.nombre}</h1>
-              <p className="mt-3 max-w-2xl text-slate-200">{config?.descripcion || getDefaultPortalConfig(emp).descripcion}</p>
+              <h1 className="mt-2 text-3xl md:text-4xl font-black">{emp.nombre}</h1>
+              <p className="mt-2 max-w-2xl text-sm md:text-base text-slate-200">{config?.descripcion || getDefaultPortalConfig(emp).descripcion}</p>
               <p className="mt-2 text-sm text-slate-400">{emp.rubro} · {emp.actividad}</p>
             </div>
             <div className="rounded-3xl border border-white/10 bg-white/10 p-4 text-sm text-slate-100">
@@ -2234,7 +2320,11 @@ function PlanDetailList({ title, items, icon }) {
   );
 }
 
-function SuscripcionesPage({ emprendimientos, planes, historialComercial = [] }) {
+function SuscripcionesPage({ emprendimientos, planes, historialComercial = [], commissionSettings, onUpdateCommissionSettings, portalCommissions = [] }) {
+  const [localCommission, setLocalCommission] = useState({
+    porcentaje: commissionSettings.porcentaje,
+    limiteMensual: commissionSettings.limiteMensual,
+  });
   const horasTrabajo = [
     { fecha: "18/06/2026", tarea: "Ajustes visuales del panel admin", horas: 2.5, valorHora: 4500, responsable: "C&R" },
     { fecha: "18/06/2026", tarea: "Configuración y soporte de deploy", horas: 1.5, valorHora: 4500, responsable: "C&R + IA" },
@@ -2242,6 +2332,14 @@ function SuscripcionesPage({ emprendimientos, planes, historialComercial = [] })
   ];
 
   const getPlan = (name) => planes.find((p) => p.nombre === name) || planes[0];
+
+  useEffect(() => {
+    setLocalCommission({
+      porcentaje: commissionSettings.porcentaje,
+      limiteMensual: commissionSettings.limiteMensual,
+    });
+  }, [commissionSettings.porcentaje, commissionSettings.limiteMensual]);
+
   const rows = emprendimientos.map((e) => ({
     ...e,
     planData: getPlan(e.plan),
@@ -2255,6 +2353,15 @@ function SuscripcionesPage({ emprendimientos, planes, historialComercial = [] })
   const bonificados = rows.filter((e) => e.estadoPago === "Bonificado").length;
   const costoHoras = horasTrabajo.reduce((acc, h) => acc + h.horas * h.valorHora, 0);
   const gananciaEstimada = ingresosConfirmados - costoHoras;
+  const totalVentasPortal = portalCommissions.reduce((acc, item) => acc + Number(item.venta || 0), 0);
+  const totalComisionesPortal = portalCommissions.reduce((acc, item) => acc + Number(item.comision || 0), 0);
+
+  function saveCommissionSettings() {
+    onUpdateCommissionSettings({
+      porcentaje: Number(localCommission.porcentaje || 0),
+      limiteMensual: Number(localCommission.limiteMensual || 0),
+    });
+  }
 
   return (
     <div className="space-y-6">
@@ -2271,6 +2378,62 @@ function SuscripcionesPage({ emprendimientos, planes, historialComercial = [] })
         <StatCard icon={<ShieldCheck />} label="Bonificados" value={bonificados} className="border-violet-400/25 bg-gradient-to-br from-violet-500 via-fuchsia-600 to-slate-950" />
         <StatCard icon={<Clock />} label="Horas C&R" value={`${horasTrabajo.reduce((acc, h) => acc + h.horas, 0)} h`} className="border-sky-400/25 bg-gradient-to-br from-sky-500 via-blue-600 to-slate-950" />
         <StatCard icon={<CheckCircle2 />} label="Ganancia estimada" value={money(gananciaEstimada)} className="border-lime-400/25 bg-gradient-to-br from-lime-500 via-green-600 to-slate-950" />
+      </div>
+
+      <div className="grid grid-cols-1 xl:grid-cols-[.8fr_1.2fr] gap-5">
+        <Card>
+          <CardContent className="p-5 space-y-4">
+            <div>
+              <h2 className="text-xl font-black text-white">Comisión del portal</h2>
+              <p className="text-sm text-slate-300 mt-1">Configuración manual visible para emprendedores.</p>
+            </div>
+            <InputField icon={<DollarSign />} label="Porcentaje de comisión" type="number" min="0" step="0.1" value={localCommission.porcentaje} onChange={(e) => setLocalCommission({ ...localCommission, porcentaje: e.target.value })} />
+            <InputField icon={<ShieldCheck />} label="Límite mensual por emprendimiento" type="number" min="0" value={localCommission.limiteMensual} onChange={(e) => setLocalCommission({ ...localCommission, limiteMensual: e.target.value })} />
+            <Button type="button" onClick={saveCommissionSettings} className="w-full bg-blue-500 text-black">Actualizar comisión</Button>
+            <p className="text-xs text-slate-400">Al actualizar, el emprendedor verá un aviso al entrar.</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-5 space-y-4">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+              <div>
+                <h2 className="text-xl font-black text-white">Ventas por portal</h2>
+                <p className="text-sm text-slate-300 mt-1">Registro manual de ventas concretadas desde exhibición.</p>
+              </div>
+              <div className="flex gap-2">
+                <Badge>{money(totalVentasPortal)} ventas</Badge>
+                <Badge>{money(totalComisionesPortal)} comisión</Badge>
+              </div>
+            </div>
+            {portalCommissions.length ? (
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[900px] text-sm">
+                  <TableHead headers={["Fecha", "Emprendimiento", "Contacto", "Publicación", "Venta", "%", "Comisión", "Estado"]} />
+                  <tbody>
+                    {portalCommissions.map((item) => {
+                      const emp = emprendimientos.find((e) => e.id === item.emprendimientoId);
+                      return (
+                        <tr key={item.id} className="border-b border-slate-800 hover:bg-slate-900/60 transition">
+                          <td className="py-4 pr-4 text-slate-100 whitespace-nowrap">{item.fecha}</td>
+                          <td className="py-4 pr-4 font-bold text-white">{emp?.nombre || item.emprendimientoId}</td>
+                          <td className="py-4 pr-4 text-slate-100">{item.usuario}</td>
+                          <td className="py-4 pr-4 text-slate-100">{item.publicacionTitulo}</td>
+                          <td className="py-4 pr-4 text-emerald-300 font-black">{money(item.venta)}</td>
+                          <td className="py-4 pr-4 text-slate-100">{item.porcentaje}%</td>
+                          <td className="py-4 pr-4 text-amber-300 font-black">{money(item.comision)}</td>
+                          <td className="py-4 pr-4"><StatusBadge label={item.estado} tone="warning" /></td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4 text-sm text-slate-300">Todavía no hay ventas registradas desde portales.</div>
+            )}
+          </CardContent>
+        </Card>
       </div>
 
       <Card>
@@ -3248,13 +3411,16 @@ function ClienteRecetas({ emp }) {
   );
 }
 
-function ClienteExhibicion({ emp, publicaciones, consultas, portalConfig, portalViews, setPublicaciones, onUpdateConsulta, onUpdatePortalConfig }) {
+function ClienteExhibicion({ emp, publicaciones, consultas, portalConfig, portalViews, commissionSettings, portalCommissions, setPublicaciones, onUpdateConsulta, onUpdatePortalConfig, onRegisterSale }) {
   const [showNewPublication, setShowNewPublication] = useState(false);
   const [newPublication, setNewPublication] = useState({ titulo: "", descripcion: "", precio: "", categoria: "", estado: "Visible", imagen: "" });
+  const [saleModal, setSaleModal] = useState(null);
+  const [saleAmount, setSaleAmount] = useState("");
   const portalUrl = typeof window !== "undefined" ? `${window.location.origin}${window.location.pathname}?portal=${encodeURIComponent(emp.id)}` : `?portal=${emp.id}`;
   const visibles = publicaciones.filter((item) => item.estado === "Visible").length;
   const nuevas = consultas.filter((consulta) => consulta.estado === "Nueva").length;
   const concretadas = consultas.filter((consulta) => consulta.estado === "Venta concretada").length;
+  const comisionPendiente = portalCommissions.filter((item) => item.estado === "Pendiente").reduce((acc, item) => acc + Number(item.comision || 0), 0);
 
   async function copyPortalLink() {
     try {
@@ -3298,6 +3464,14 @@ function ClienteExhibicion({ emp, publicaciones, consultas, portalConfig, portal
     onUpdateConsulta(consulta.id, { estado: "Respondida" });
   }
 
+  function confirmSale(event) {
+    event.preventDefault();
+    if (!saleModal || !Number(saleAmount || 0)) return;
+    onRegisterSale(saleModal.id, Number(saleAmount));
+    setSaleModal(null);
+    setSaleAmount("");
+  }
+
   return (
     <div className="space-y-6">
       <PageHeader title="Exhibición" subtitle="Portal público para mostrar productos, recibir consultas y convertir interesados en clientes potenciales." buttonText="Nueva publicación" onButtonClick={() => setShowNewPublication(true)} />
@@ -3320,6 +3494,19 @@ function ClienteExhibicion({ emp, publicaciones, consultas, portalConfig, portal
             <a href={portalUrl} target="_blank" rel="noreferrer">
               <Button type="button" className="w-full bg-slate-800 text-white"><Eye className="w-4 h-4 mr-2" />Ver portal</Button>
             </a>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent className="p-5 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+          <div>
+            <h2 className="text-xl font-black text-white">Comisiones del portal</h2>
+            <p className="text-sm text-slate-300 mt-1">Comisión vigente: {commissionSettings.porcentaje}% por venta concretada. Límite mensual: {money(commissionSettings.limiteMensual)}.</p>
+          </div>
+          <div className="rounded-2xl border border-amber-400/20 bg-amber-400/10 px-4 py-3 text-right">
+            <p className="text-xs font-black uppercase tracking-wide text-amber-200">Pendiente</p>
+            <p className="text-2xl font-black text-white">{money(comisionPendiente)}</p>
           </div>
         </CardContent>
       </Card>
@@ -3381,7 +3568,7 @@ function ClienteExhibicion({ emp, publicaciones, consultas, portalConfig, portal
                   <div className="flex flex-wrap gap-2 mt-3">
                     <Button type="button" onClick={() => openWhatsApp(consulta)} className="bg-green-500 text-black px-3 py-2 text-xs"><MessageCircle className="w-3 h-3 mr-1" />Responder</Button>
                     <Button type="button" onClick={() => onUpdateConsulta(consulta.id, { estado: "Potencial" })} className="bg-violet-500/20 text-violet-100 border border-violet-300/20 px-3 py-2 text-xs">Convertir en potencial</Button>
-                    <Button type="button" onClick={() => onUpdateConsulta(consulta.id, { estado: "Venta concretada" })} className="bg-emerald-500/20 text-emerald-100 border border-emerald-300/20 px-3 py-2 text-xs">Venta concretada</Button>
+                    <Button type="button" onClick={() => { setSaleModal(consulta); setSaleAmount(""); }} className="bg-emerald-500/20 text-emerald-100 border border-emerald-300/20 px-3 py-2 text-xs">Venta concretada</Button>
                     <Button type="button" onClick={() => onUpdateConsulta(consulta.id, { estado: "Cerrada" })} className="bg-slate-800 text-white px-3 py-2 text-xs">Cerrar</Button>
                   </div>
                 </div>
@@ -3413,6 +3600,26 @@ function ClienteExhibicion({ emp, publicaciones, consultas, portalConfig, portal
             <div className="flex justify-end gap-3">
               <Button type="button" onClick={() => setShowNewPublication(false)} className="bg-slate-800 text-white">Cancelar</Button>
               <Button type="submit" className="bg-blue-500 text-black">Publicar</Button>
+            </div>
+          </form>
+        </ModalShell>
+      )}
+
+      {saleModal && (
+        <ModalShell eyebrow="Venta por portal" title={saleModal.publicacionTitulo} onClose={() => setSaleModal(null)}>
+          <form onSubmit={confirmSale} className="p-5 space-y-4">
+            <div className="rounded-2xl border border-blue-500/20 bg-blue-500/10 p-4 text-sm text-slate-100">
+              Cargá el monto vendido. El sistema calcula la comisión vigente y respeta el límite mensual configurado por C&R.
+            </div>
+            <InputField icon={<DollarSign />} label="Monto vendido" type="number" min="0" value={saleAmount} onChange={(e) => setSaleAmount(e.target.value)} placeholder="Ej: 15000" required />
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <InfoItem label="Comisión" value={`${commissionSettings.porcentaje}%`} />
+              <InfoItem label="Límite mensual" value={money(commissionSettings.limiteMensual)} />
+              <InfoItem label="Estimado" value={money(Math.round(Number(saleAmount || 0) * (Number(commissionSettings.porcentaje || 0) / 100)))} highlight />
+            </div>
+            <div className="flex gap-3">
+              <Button type="button" onClick={() => setSaleModal(null)} className="w-full bg-slate-800 text-white">Cancelar</Button>
+              <Button type="submit" className="w-full bg-emerald-500 text-black">Registrar venta</Button>
             </div>
           </form>
         </ModalShell>
