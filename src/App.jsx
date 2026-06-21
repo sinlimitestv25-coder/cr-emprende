@@ -43,6 +43,7 @@ const modulesBase = [
   "Proveedores",
   "Producción / Recetas",
   "Clientes",
+  "Exhibición",
   "Presupuestos",
   "Pedidos",
   "Finanzas",
@@ -59,7 +60,7 @@ const rubrosIniciales = [
     etiquetaInsumos: "Insumos",
     actividades: ["Jabones", "Velas", "Tejidos", "Sahumerios", "Souvenirs"],
     ejemplos: "sahumerios, tejidos, velas, manualidades, fragancias",
-    modulos: ["Dashboard", "Productos", "Insumos", "Proveedores", "Clientes", "Presupuestos", "Pedidos", "Finanzas", "WhatsApp", "Configuración"],
+    modulos: ["Dashboard", "Productos", "Insumos", "Proveedores", "Clientes", "Exhibición", "Presupuestos", "Pedidos", "Finanzas", "WhatsApp", "Configuración"],
   },
   {
     id: "RUB-GAS",
@@ -68,7 +69,7 @@ const rubrosIniciales = [
     etiquetaInsumos: "Materia prima",
     actividades: ["Alfajores", "Tortas", "Viandas", "Cumpleaños", "Panificados"],
     ejemplos: "tortas, alfajores, comida casera, panificados",
-    modulos: ["Dashboard", "Productos", "Insumos", "Proveedores", "Producción / Recetas", "Clientes", "Presupuestos", "Pedidos", "Finanzas", "WhatsApp", "Configuración"],
+    modulos: ["Dashboard", "Productos", "Insumos", "Proveedores", "Producción / Recetas", "Clientes", "Exhibición", "Presupuestos", "Pedidos", "Finanzas", "WhatsApp", "Configuración"],
   },
   {
     id: "RUB-IMP",
@@ -77,7 +78,7 @@ const rubrosIniciales = [
     etiquetaInsumos: "Insumos",
     actividades: ["Fotocopias", "Sublimación", "Stickers", "Tarjetas", "Cumpleaños personalizados"],
     ejemplos: "stickers, tarjetas, folletos, sublimados, fotocopias",
-    modulos: ["Dashboard", "Productos", "Insumos", "Proveedores", "Clientes", "Presupuestos", "Pedidos", "Finanzas", "Reportes", "WhatsApp", "Configuración"],
+    modulos: ["Dashboard", "Productos", "Insumos", "Proveedores", "Clientes", "Exhibición", "Presupuestos", "Pedidos", "Finanzas", "Reportes", "WhatsApp", "Configuración"],
   },
   {
     id: "RUB-USADOS",
@@ -86,7 +87,7 @@ const rubrosIniciales = [
     etiquetaInsumos: "Mercadería",
     actividades: ["Ropa usada", "Ropa infantil", "Accesorios", "Feria americana", "Calzado"],
     ejemplos: "ropa usada, medias, accesorios, feria americana",
-    modulos: ["Dashboard", "Productos", "Clientes", "Pedidos", "Finanzas", "Reportes", "WhatsApp", "Configuración"],
+    modulos: ["Dashboard", "Productos", "Clientes", "Exhibición", "Pedidos", "Finanzas", "Reportes", "WhatsApp", "Configuración"],
   },
 ];
 
@@ -211,6 +212,63 @@ const clientesDemo = [
   { id: "CLI-3", emprendimientoId: "EMP-002", nombre: "Lucía Pérez", telefono: "2974 555666", compras: 6, ultimaCompra: "Alfajor chocolate", estado: "Activo" },
 ];
 
+const exhibicionInicial = [
+  {
+    id: "PUB-001",
+    emprendimientoId: "EMP-001",
+    titulo: "Jabón lavanda artesanal",
+    descripcion: "Jabón aromático hecho a mano, ideal para regalos o uso personal.",
+    precio: 1800,
+    categoria: "Jabones",
+    estado: "Visible",
+    imagen: "",
+  },
+  {
+    id: "PUB-002",
+    emprendimientoId: "EMP-001",
+    titulo: "Pack regalo x3",
+    descripcion: "Tres jabones artesanales listos para regalar.",
+    precio: 4500,
+    categoria: "Regalos",
+    estado: "Visible",
+    imagen: "",
+  },
+  {
+    id: "PUB-003",
+    emprendimientoId: "EMP-002",
+    titulo: "Alfajor chocolate",
+    descripcion: "Alfajor artesanal de chocolate con dulce de leche.",
+    precio: 800,
+    categoria: "Dulces",
+    estado: "Visible",
+    imagen: "",
+  },
+];
+
+const STORAGE_KEYS = {
+  publicaciones: "cr-emprende-publicaciones",
+  consultasPortal: "cr-emprende-consultas-portal",
+};
+
+function loadStoredValue(key, fallback) {
+  if (typeof window === "undefined") return fallback;
+  try {
+    const raw = window.localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function saveStoredValue(key, value) {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    // Local storage can fail in restricted browsing modes.
+  }
+}
+
 
 function parseEsDate(dateText) {
   if (!dateText || typeof dateText !== "string") return null;
@@ -278,6 +336,13 @@ function formatRemaining(ms) {
   return `${minutes}m ${String(seconds).padStart(2, "0")}s`;
 }
 
+function normalizePhoneForWhatsApp(value) {
+  const digits = String(value || "").replace(/\D/g, "");
+  if (!digits) return "";
+  if (digits.startsWith("54")) return digits;
+  return `54${digits}`;
+}
+
 function addMinutesFromNow(minutes) {
   const date = new Date();
   date.setMinutes(date.getMinutes() + Number(minutes));
@@ -307,6 +372,7 @@ const demoDurationOptions = [
 function App() {
   const supportParams = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
   const supportEmpIdFromUrl = supportParams?.get("soporte_emp") || null;
+  const portalEmpIdFromUrl = supportParams?.get("portal") || null;
   const isSupportSession = Boolean(supportEmpIdFromUrl);
 
   const [isLoggedIn, setIsLoggedIn] = useState(isSupportSession);
@@ -334,6 +400,8 @@ function App() {
     { id: "MSG-002", emprendimientoId: "EMP-002", usuarioId: "USR-002", adminId: "ADMIN-CR-001", de: "Ana Repostería", asunto: "Ayuda con recetas", categoria: "Ayuda", mensaje: "Necesito revisar cómo cargar los costos de una receta nueva.", estado: "Respondido", fecha: "Ayer 18:05", respuesta: "Sí, Ana. Entrá en Producción / Recetas y cargá primero la materia prima. Después armamos la receta con cantidades para calcular costo por unidad.", fechaRespuesta: "Ayer 18:42", respondidoPor: "C&R Soporte" },
   ]);
   const [historialComercial, setHistorialComercial] = useState([]);
+  const [publicaciones, setPublicaciones] = useState(() => loadStoredValue(STORAGE_KEYS.publicaciones, exhibicionInicial));
+  const [consultasPortal, setConsultasPortal] = useState(() => loadStoredValue(STORAGE_KEYS.consultasPortal, []));
 
   const selectedEmp = emprendimientos.find((e) => e.id === selectedEmpId) || emprendimientos[0];
   const isAdmin = loginRole === "Super Admin";
@@ -365,6 +433,28 @@ function App() {
     const interval = window.setInterval(updateDemoTimer, 1000);
     return () => window.clearInterval(interval);
   }, [currentUser, isAdmin, isLoggedIn]);
+
+  useEffect(() => {
+    saveStoredValue(STORAGE_KEYS.publicaciones, publicaciones);
+  }, [publicaciones]);
+
+  useEffect(() => {
+    saveStoredValue(STORAGE_KEYS.consultasPortal, consultasPortal);
+  }, [consultasPortal]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+    function syncPortalStorage(event) {
+      if (event.key === STORAGE_KEYS.publicaciones) {
+        setPublicaciones(loadStoredValue(STORAGE_KEYS.publicaciones, exhibicionInicial));
+      }
+      if (event.key === STORAGE_KEYS.consultasPortal) {
+        setConsultasPortal(loadStoredValue(STORAGE_KEYS.consultasPortal, []));
+      }
+    }
+    window.addEventListener("storage", syncPortalStorage);
+    return () => window.removeEventListener("storage", syncPortalStorage);
+  }, []);
 
   function handleLogin(e) {
     e.preventDefault();
@@ -453,6 +543,22 @@ function App() {
     ]);
   }
 
+  function addPortalConsulta(consulta) {
+    setConsultasPortal((prev) => [
+      {
+        id: `CONS-${Date.now().toString().slice(-6)}`,
+        fecha: new Date().toLocaleString("es-AR", { dateStyle: "short", timeStyle: "short" }),
+        estado: "Nueva",
+        ...consulta,
+      },
+      ...prev,
+    ]);
+  }
+
+  function updatePortalConsulta(consultaId, changes) {
+    setConsultasPortal((prev) => prev.map((consulta) => consulta.id === consultaId ? { ...consulta, ...changes } : consulta));
+  }
+
   function replyMensaje(mensajeId, respuesta) {
     setMensajes((prev) =>
       prev.map((m) =>
@@ -508,6 +614,16 @@ function App() {
     return nextCount;
   }
 
+  if (portalEmpIdFromUrl) {
+    return (
+      <PortalPublico
+        emp={emprendimientos.find((e) => e.id === portalEmpIdFromUrl)}
+        publicaciones={publicaciones.filter((item) => item.emprendimientoId === portalEmpIdFromUrl && item.estado === "Visible")}
+        onConsulta={addPortalConsulta}
+      />
+    );
+  }
+
   if (!isLoggedIn) {
     return (
       <>
@@ -542,6 +658,7 @@ function App() {
               <SidebarButton active={activePage === "proveedores"} icon={<Building2 />} label="Proveedores" onClick={() => setActivePage("proveedores")} />
               <SidebarButton active={activePage === "recetas"} icon={<ClipboardList />} label="Producción / Recetas" onClick={() => setActivePage("recetas")} />
               <SidebarButton active={activePage === "clientes"} icon={<Users />} label="Clientes" onClick={() => setActivePage("clientes")} />
+              <SidebarButton active={activePage === "exhibicion"} icon={<Eye />} label="Exhibición" onClick={() => setActivePage("exhibicion")} />
               <SidebarButton active={activePage === "presupuestos"} icon={<CreditCard />} label="Presupuestos" onClick={() => setActivePage("presupuestos")} />
               <SidebarButton active={activePage === "pedidos"} icon={<ShoppingBag />} label="Pedidos" onClick={() => setActivePage("pedidos")} />
               <SidebarButton active={activePage === "finanzas"} icon={<DollarSign />} label="Finanzas" onClick={() => setActivePage("finanzas")} />
@@ -584,7 +701,8 @@ function App() {
           {!isAdmin && activePage === "insumos" && <ClienteInsumos emp={selectedEmp} />}
           {!isAdmin && activePage === "proveedores" && <ClienteProveedores emp={selectedEmp} />}
           {!isAdmin && activePage === "recetas" && <ClienteRecetas emp={selectedEmp} />}
-          {!isAdmin && activePage === "clientes" && <ClienteClientes emp={selectedEmp} />}
+          {!isAdmin && activePage === "clientes" && <ClienteClientes emp={selectedEmp} potenciales={consultasPortal.filter((consulta) => consulta.emprendimientoId === selectedEmp.id && consulta.estado === "Potencial")} />}
+          {!isAdmin && activePage === "exhibicion" && <ClienteExhibicion emp={selectedEmp} publicaciones={publicaciones.filter((item) => item.emprendimientoId === selectedEmp.id)} consultas={consultasPortal.filter((consulta) => consulta.emprendimientoId === selectedEmp.id)} setPublicaciones={setPublicaciones} onUpdateConsulta={updatePortalConsulta} />}
           {!isAdmin && activePage === "presupuestos" && <ClientePresupuestos emp={selectedEmp} />}
           {!isAdmin && activePage === "pedidos" && <ClientePedidos emp={selectedEmp} />}
           {!isAdmin && activePage === "finanzas" && <ClienteFinanzas emp={selectedEmp} />}
@@ -735,6 +853,107 @@ function LoginScreen({ email, setEmail, password, setPassword, error, onLogin })
           <Button type="submit" className="w-full rounded-2xl bg-gradient-to-r from-sky-400 via-cyan-300 to-emerald-300 text-slate-950 hover:scale-[1.01] py-6 font-black shadow-xl shadow-sky-950/30">Ingresar</Button>
         </form>
       </div>
+    </div>
+  );
+}
+
+function PortalPublico({ emp, publicaciones, onConsulta }) {
+  const [selectedPublication, setSelectedPublication] = useState(null);
+  const [form, setForm] = useState({ nombre: "", whatsapp: "", mensaje: "" });
+  const [sent, setSent] = useState(false);
+
+  if (!emp) {
+    return (
+      <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center p-6">
+        <div className="max-w-md rounded-3xl border border-red-400/20 bg-red-400/10 p-6 text-center">
+          <h1 className="text-2xl font-black">Portal no encontrado</h1>
+          <p className="text-slate-200 mt-2">El link no corresponde a un emprendimiento activo.</p>
+        </div>
+      </div>
+    );
+  }
+
+  function openConsult(publication) {
+    setSelectedPublication(publication);
+    setForm({ nombre: "", whatsapp: "", mensaje: `Hola, me interesa ${publication.titulo}.` });
+    setSent(false);
+  }
+
+  function submitConsult(event) {
+    event.preventDefault();
+    if (!selectedPublication || !form.nombre.trim() || !form.whatsapp.trim()) return;
+    onConsulta({
+      emprendimientoId: emp.id,
+      publicacionId: selectedPublication.id,
+      publicacionTitulo: selectedPublication.titulo,
+      nombre: form.nombre.trim(),
+      whatsapp: form.whatsapp.trim(),
+      mensaje: form.mensaje.trim() || `Consulta por ${selectedPublication.titulo}`,
+    });
+    setSent(true);
+  }
+
+  return (
+    <div className="min-h-screen bg-slate-950 text-white">
+      <section className="relative overflow-hidden border-b border-white/10 p-6 md:p-10" style={{ backgroundImage: "linear-gradient(90deg, rgba(2,6,23,.92), rgba(2,6,23,.70)), url('/fondo-saas.png')", backgroundSize: "cover", backgroundPosition: "center" }}>
+        <div className="mx-auto max-w-6xl">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-5">
+            <div>
+              <p className="text-xs font-black uppercase tracking-[0.24em] text-sky-300">Portal de exhibición</p>
+              <h1 className="mt-3 text-4xl md:text-5xl font-black">{emp.nombre}</h1>
+              <p className="mt-3 max-w-2xl text-slate-200">{emp.rubro} · {emp.actividad}</p>
+            </div>
+            <div className="rounded-3xl border border-white/10 bg-white/10 p-4 text-sm text-slate-100">
+              <p className="font-black text-white">Contacto</p>
+              <p className="mt-1">{emp.whatsapp || "WhatsApp pendiente"}</p>
+              <p>{emp.instagram || ""}</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <main className="mx-auto max-w-6xl p-6 md:p-10 space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+          {publicaciones.map((item) => (
+            <div key={item.id} className="overflow-hidden rounded-3xl border border-white/10 bg-slate-900 shadow-2xl shadow-black/30">
+              <PublicacionImage item={item} />
+              <div className="p-5 space-y-3">
+                <p className="text-xs font-black uppercase tracking-wide text-sky-300">{item.categoria}</p>
+                <h2 className="text-xl font-black">{item.titulo}</h2>
+                <p className="text-sm text-slate-300">{item.descripcion}</p>
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-emerald-300 font-black">{item.precio ? money(item.precio) : "Consultar"}</p>
+                  <Button type="button" onClick={() => openConsult(item)} className="bg-blue-500 text-black">Consultar</Button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+        {!publicaciones.length && <div className="rounded-3xl border border-white/10 bg-slate-900 p-6 text-slate-300">Este portal todavía no tiene publicaciones visibles.</div>}
+      </main>
+
+      {selectedPublication && (
+        <ModalShell eyebrow="Consulta" title={selectedPublication.titulo} onClose={() => setSelectedPublication(null)}>
+          {sent ? (
+            <div className="p-5 space-y-4">
+              <div className="rounded-2xl border border-emerald-400/20 bg-emerald-400/10 p-4 text-emerald-200 font-bold">
+                Consulta enviada. El emprendimiento va a responderte por WhatsApp.
+              </div>
+              <Button type="button" onClick={() => setSelectedPublication(null)} className="w-full bg-blue-500 text-black">Cerrar</Button>
+            </div>
+          ) : (
+            <form onSubmit={submitConsult} className="p-5 space-y-4">
+              <InputField icon={<Users />} label="Nombre" value={form.nombre} onChange={(e) => setForm({ ...form, nombre: e.target.value })} required />
+              <InputField icon={<Phone />} label="WhatsApp" value={form.whatsapp} onChange={(e) => setForm({ ...form, whatsapp: e.target.value })} placeholder="Ej: 2974 123456" required />
+              <div>
+                <label className="text-sm font-bold text-slate-200 mb-2 block">Consulta</label>
+                <textarea value={form.mensaje} onChange={(e) => setForm({ ...form, mensaje: e.target.value })} className="w-full min-h-[120px] rounded-2xl bg-slate-950/70 border border-white/10 px-4 py-3 text-white outline-none focus:border-sky-400" />
+              </div>
+              <Button type="submit" className="w-full bg-blue-500 text-black">Enviar consulta</Button>
+            </form>
+          )}
+        </ModalShell>
+      )}
     </div>
   );
 }
@@ -2959,7 +3178,186 @@ function ClienteRecetas({ emp }) {
     </div>
   );
 }
-function ClienteClientes({ emp }) {
+
+function ClienteExhibicion({ emp, publicaciones, consultas, setPublicaciones, onUpdateConsulta }) {
+  const [showNewPublication, setShowNewPublication] = useState(false);
+  const [newPublication, setNewPublication] = useState({ titulo: "", descripcion: "", precio: "", categoria: "", estado: "Visible", imagen: "" });
+  const portalUrl = typeof window !== "undefined" ? `${window.location.origin}${window.location.pathname}?portal=${encodeURIComponent(emp.id)}` : `?portal=${emp.id}`;
+  const visibles = publicaciones.filter((item) => item.estado === "Visible").length;
+  const nuevas = consultas.filter((consulta) => consulta.estado === "Nueva").length;
+
+  async function copyPortalLink() {
+    try {
+      await navigator.clipboard.writeText(portalUrl);
+    } catch {
+      // Clipboard can fail on insecure origins; the visible URL remains available.
+    }
+  }
+
+  function handleImageFile(file) {
+    if (!file) return;
+    setNewPublication((prev) => ({ ...prev, imagen: URL.createObjectURL(file) }));
+  }
+
+  function createPublication(event) {
+    event.preventDefault();
+    if (!newPublication.titulo.trim()) return;
+    const created = {
+      id: `PUB-${Date.now()}`,
+      emprendimientoId: emp.id,
+      titulo: newPublication.titulo.trim(),
+      descripcion: newPublication.descripcion.trim(),
+      precio: Number(newPublication.precio || 0),
+      categoria: newPublication.categoria.trim() || "General",
+      estado: newPublication.estado,
+      imagen: newPublication.imagen,
+    };
+    setPublicaciones((prev) => [created, ...prev]);
+    setNewPublication({ titulo: "", descripcion: "", precio: "", categoria: "", estado: "Visible", imagen: "" });
+    setShowNewPublication(false);
+  }
+
+  function togglePublication(publicationId) {
+    setPublicaciones((prev) => prev.map((item) => item.id === publicationId ? { ...item, estado: item.estado === "Visible" ? "Oculto" : "Visible" } : item));
+  }
+
+  function openWhatsApp(consulta) {
+    const phone = normalizePhoneForWhatsApp(consulta.whatsapp);
+    const text = `Hola ${consulta.nombre}, te respondo por tu consulta sobre "${consulta.publicacionTitulo}".`;
+    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(text)}`, "_blank", "noopener,noreferrer");
+    onUpdateConsulta(consulta.id, { estado: "Respondida" });
+  }
+
+  return (
+    <div className="space-y-6">
+      <PageHeader title="Exhibición" subtitle="Portal público para mostrar productos, recibir consultas y convertir interesados en clientes potenciales." buttonText="Nueva publicación" onButtonClick={() => setShowNewPublication(true)} />
+
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <ColorStatCard icon={<Eye />} label="Publicaciones" value={publicaciones.length} color="from-sky-400 via-blue-500 to-indigo-600" />
+        <ColorStatCard icon={<CheckCircle2 />} label="Visibles" value={visibles} color="from-emerald-400 via-teal-500 to-cyan-500" />
+        <ColorStatCard icon={<MessageCircle />} label="Consultas nuevas" value={nuevas} color="from-amber-300 via-orange-500 to-red-500" />
+        <ColorStatCard icon={<Users />} label="Potenciales" value={consultas.filter((c) => c.estado === "Potencial").length} color="from-violet-500 via-purple-500 to-fuchsia-500" />
+      </div>
+
+      <Card>
+        <CardContent className="p-5 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+          <div>
+            <h2 className="text-xl font-black text-white">Link público del portal</h2>
+            <p className="text-sm text-slate-300 mt-1 break-all">{portalUrl}</p>
+          </div>
+          <div className="flex flex-col sm:flex-row gap-2">
+            <Button type="button" onClick={copyPortalLink} className="bg-blue-500 text-black"><Copy className="w-4 h-4 mr-2" />Copiar link</Button>
+            <a href={portalUrl} target="_blank" rel="noreferrer">
+              <Button type="button" className="w-full bg-slate-800 text-white"><Eye className="w-4 h-4 mr-2" />Ver portal</Button>
+            </a>
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="grid grid-cols-1 xl:grid-cols-[1.1fr_.9fr] gap-5">
+        <Card>
+          <CardContent className="p-5 space-y-4">
+            <h2 className="text-xl font-black text-white">Publicaciones</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {publicaciones.map((item) => (
+                <ExhibicionCard key={item.id} item={item} onToggle={() => togglePublication(item.id)} />
+              ))}
+              {!publicaciones.length && <p className="text-sm text-slate-300">Todavía no hay publicaciones.</p>}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-5 space-y-4">
+            <h2 className="text-xl font-black text-white">Consultas del portal</h2>
+            <div className="space-y-3 max-h-[620px] overflow-y-auto pr-1">
+              {consultas.map((consulta) => (
+                <div key={consulta.id} className="rounded-2xl border border-white/10 bg-slate-950/70 p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="font-black text-white">{consulta.nombre}</p>
+                      <p className="text-xs text-sky-300">{consulta.fecha} · {consulta.publicacionTitulo}</p>
+                    </div>
+                    <StatusBadge label={consulta.estado} tone={consulta.estado === "Nueva" ? "danger" : consulta.estado === "Potencial" ? "warning" : "success"} />
+                  </div>
+                  <p className="text-sm text-slate-100 mt-3">{consulta.mensaje}</p>
+                  <p className="text-sm text-emerald-300 font-bold mt-2">WhatsApp: {consulta.whatsapp}</p>
+                  <div className="flex flex-wrap gap-2 mt-3">
+                    <Button type="button" onClick={() => openWhatsApp(consulta)} className="bg-green-500 text-black px-3 py-2 text-xs"><MessageCircle className="w-3 h-3 mr-1" />Responder</Button>
+                    <Button type="button" onClick={() => onUpdateConsulta(consulta.id, { estado: "Potencial" })} className="bg-violet-500/20 text-violet-100 border border-violet-300/20 px-3 py-2 text-xs">Convertir en potencial</Button>
+                    <Button type="button" onClick={() => onUpdateConsulta(consulta.id, { estado: "Cerrada" })} className="bg-slate-800 text-white px-3 py-2 text-xs">Cerrar</Button>
+                  </div>
+                </div>
+              ))}
+              {!consultas.length && <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4 text-sm text-slate-300">Las consultas enviadas desde el portal van a aparecer acá.</div>}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {showNewPublication && (
+        <ModalShell eyebrow="Exhibición" title="Nueva publicación" onClose={() => setShowNewPublication(false)}>
+          <form onSubmit={createPublication} className="p-5 space-y-5">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <InputField icon={<ShoppingBag />} label="Título" value={newPublication.titulo} onChange={(e) => setNewPublication({ ...newPublication, titulo: e.target.value })} placeholder="Ej: Box regalo personalizado" required />
+              <InputField icon={<DollarSign />} label="Precio opcional" type="number" min="0" value={newPublication.precio} onChange={(e) => setNewPublication({ ...newPublication, precio: e.target.value })} placeholder="Ej: 12000" />
+              <InputField icon={<Boxes />} label="Categoría" value={newPublication.categoria} onChange={(e) => setNewPublication({ ...newPublication, categoria: e.target.value })} placeholder="Ej: Regalos" />
+              <SelectField label="Estado" value={newPublication.estado} onChange={(e) => setNewPublication({ ...newPublication, estado: e.target.value })} options={["Visible", "Oculto"]} />
+              <InputField icon={<Globe />} label="URL de imagen" value={newPublication.imagen} onChange={(e) => setNewPublication({ ...newPublication, imagen: e.target.value })} placeholder="https://..." />
+              <div>
+                <label className="text-sm font-bold text-slate-200 mb-2 block">Subir foto local</label>
+                <input type="file" accept="image/*" onChange={(e) => handleImageFile(e.target.files?.[0])} className="w-full rounded-xl bg-slate-950 border border-slate-700 px-3 py-3 text-white" />
+              </div>
+              <div className="md:col-span-2">
+                <label className="text-sm font-bold text-slate-200 mb-2 block">Descripción</label>
+                <textarea value={newPublication.descripcion} onChange={(e) => setNewPublication({ ...newPublication, descripcion: e.target.value })} placeholder="Detalle comercial de la publicación" className="w-full min-h-[120px] rounded-2xl bg-slate-950/70 border border-white/10 px-4 py-3 text-white outline-none focus:border-sky-400" />
+              </div>
+            </div>
+            <div className="flex justify-end gap-3">
+              <Button type="button" onClick={() => setShowNewPublication(false)} className="bg-slate-800 text-white">Cancelar</Button>
+              <Button type="submit" className="bg-blue-500 text-black">Publicar</Button>
+            </div>
+          </form>
+        </ModalShell>
+      )}
+    </div>
+  );
+}
+
+function ExhibicionCard({ item, onToggle }) {
+  return (
+    <div className="overflow-hidden rounded-3xl border border-white/10 bg-slate-950/70">
+      <PublicacionImage item={item} />
+      <div className="p-4 space-y-3">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="text-xs font-black uppercase tracking-wide text-sky-300">{item.categoria}</p>
+            <h3 className="text-lg font-black text-white">{item.titulo}</h3>
+          </div>
+          <StatusBadge label={item.estado} tone={item.estado === "Visible" ? "success" : "warning"} />
+        </div>
+        <p className="text-sm text-slate-300">{item.descripcion}</p>
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-emerald-300 font-black">{item.precio ? money(item.precio) : "Consultar"}</p>
+          <Button type="button" onClick={onToggle} className="bg-slate-800 text-white px-3 py-2 text-xs">{item.estado === "Visible" ? "Ocultar" : "Mostrar"}</Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PublicacionImage({ item }) {
+  if (item.imagen) {
+    return <img src={item.imagen} alt={item.titulo} className="h-44 w-full object-cover" />;
+  }
+  return (
+    <div className="h-44 w-full bg-gradient-to-br from-sky-500 via-violet-500 to-emerald-400 flex items-center justify-center">
+      <Package className="w-14 h-14 text-white/90" />
+    </div>
+  );
+}
+
+function ClienteClientes({ emp, potenciales = [] }) {
   const baseClientes = clientesDemo.filter((c) => c.emprendimientoId === emp.id).map((c) => ({
     ...c,
     email: c.email || "",
@@ -2968,10 +3366,32 @@ function ClienteClientes({ emp }) {
     totalComprado: c.totalComprado || c.compras * 8500,
     ultimaActividad: c.ultimaCompra ? `Último pedido: ${c.ultimaCompra}` : "Sin movimientos",
   }));
-  const [clientes, setClientes] = useState(baseClientes);
+  const clientesPotenciales = potenciales.map((consulta) => ({
+    id: `POT-${consulta.id}`,
+    emprendimientoId: emp.id,
+    nombre: consulta.nombre,
+    telefono: consulta.whatsapp,
+    email: "",
+    direccion: "",
+    notas: `Cliente potencial desde portal. Interés: ${consulta.publicacionTitulo}. Consulta: ${consulta.mensaje}`,
+    compras: 0,
+    ultimaCompra: "Sin compras todavía",
+    estado: "Potencial",
+    ultimaActividad: `Consulta portal: ${consulta.publicacionTitulo}`,
+    totalComprado: 0,
+  }));
+  const [clientes, setClientes] = useState([...clientesPotenciales, ...baseClientes]);
   const [showNewClient, setShowNewClient] = useState(false);
   const [selectedClient, setSelectedClient] = useState(null);
   const [newClient, setNewClient] = useState({ nombre: "", telefono: "", email: "", direccion: "", notas: "" });
+
+  useEffect(() => {
+    setClientes((prev) => {
+      const existingIds = new Set(prev.map((cliente) => cliente.id));
+      const nuevos = clientesPotenciales.filter((cliente) => !existingIds.has(cliente.id));
+      return nuevos.length ? [...nuevos, ...prev] : prev;
+    });
+  }, [potenciales]);
 
   function handleCreateClient(event) {
     event.preventDefault();
