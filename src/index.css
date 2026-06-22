@@ -55,7 +55,7 @@ input, select, textarea { color: #172033; }
   position: relative;
   overflow: hidden;
   background: rgba(255, 255, 255, 0.92);
-  border: 1px solid rgba(148, 163, 184, 0.28);
+  border: 1px solid rgba(100, 116, 139, 0.42);
   box-shadow: 0 16px 42px rgba(15, 23, 42, .10), inset 0 1px 0 rgba(255,255,255,.85);
   backdrop-filter: blur(16px);
 }
@@ -471,11 +471,29 @@ table tbody td {
   color: #0f172a !important;
 }
 
+button.bg-gradient-to-r,
+button.bg-gradient-to-r.text-slate-950,
+button.bg-gradient-to-r.text-black,
+button.bg-gradient-to-r .text-slate-950,
+button.bg-gradient-to-r .text-black {
+  color: #ffffff !important;
+}
+
 .bg-gradient-to-br .rounded-full,
 .bg-gradient-to-r .rounded-full {
   background-color: rgba(255, 255, 255, .18) !important;
   border-color: rgba(255, 255, 255, .32) !important;
   color: #ffffff !important;
+}
+
+[style*="fondo-saas.png"] .rounded-full.bg-red-600,
+[style*="fondo-saas.png"] .rounded-full.bg-red-500,
+[style*="fondo-saas.png"] .rounded-full.bg-red-400\/15,
+.bg-gradient-to-br .rounded-full.bg-red-600,
+.bg-gradient-to-r .rounded-full.bg-red-600 {
+  background-color: #ffffff !important;
+  border-color: rgba(220, 38, 38, .35) !important;
+  color: #dc2626 !important;
 }
 
 .bg-gradient-to-br input,
@@ -706,4 +724,31 @@ button[class*="bg-"] .text-violet-100,
 button[class*="bg-"] .text-violet-200 {
   color: #ffffff !important;
   stroke: currentColor;
+}
+
+.bg-blue-600,
+.bg-cyan-600,
+.bg-emerald-600,
+.bg-violet-600,
+.bg-red-600 {
+  color: #ffffff !important;
+}
+
+.bg-blue-600 .text-white,
+.bg-blue-600 .text-sky-100,
+.bg-cyan-600 .text-white,
+.bg-cyan-600 .text-sky-100,
+.bg-emerald-600 .text-white,
+.bg-emerald-600 .text-sky-100,
+.bg-violet-600 .text-white,
+.bg-red-600 .text-white {
+  color: #ffffff !important;
+}
+
+[style*="fondo-saas.png"] .rounded-full.bg-red-600,
+.bg-gradient-to-br .rounded-full.bg-red-600,
+.bg-gradient-to-r .rounded-full.bg-red-600 {
+  background-color: #ffffff !important;
+  border-color: rgba(220, 38, 38, .36) !important;
+  color: #dc2626 !important;
 }

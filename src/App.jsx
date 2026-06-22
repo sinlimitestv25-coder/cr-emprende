@@ -1071,9 +1071,9 @@ function LoginScreen({ email, setEmail, password, setPassword, error, onLogin })
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(14,165,233,.25),transparent_30%)]" />
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_10%,rgba(168,85,247,.20),transparent_28%)]" />
       <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-[1.15fr_.85fr] rounded-[2.2rem] overflow-hidden glass-panel relative z-10 shadow-2xl shadow-blue-950/40 border border-white/10">
-        <div className="p-7 md:p-10 bg-gradient-to-br from-slate-950/92 via-black/72 to-slate-900/72">
+        <div className="p-7 md:p-10 bg-gradient-to-br from-sky-100 via-blue-50 to-emerald-50">
           <div className="flex justify-center">
-            <div className="relative inline-flex rounded-[1.5rem] bg-white/95 px-5 py-3 shadow-2xl shadow-blue-600/25 border border-white/40 overflow-hidden">
+            <div className="relative inline-flex rounded-[1.5rem] bg-sky-50 px-5 py-3 shadow-2xl shadow-blue-600/15 border border-sky-200 overflow-hidden">
               <img src="/logo-cr.png" alt="C&R Emprende" className="h-44 w-auto object-contain" />
               <span className="absolute left-4 top-6 z-10 -rotate-[16deg] rounded-full bg-gradient-to-r from-fuchsia-500 via-sky-400 to-emerald-300 px-6 py-1.5 text-xl font-black uppercase tracking-[0.18em] text-white shadow-2xl shadow-fuchsia-900/35 ring-2 ring-white/80">
                 Emprende
@@ -1082,7 +1082,7 @@ function LoginScreen({ email, setEmail, password, setPassword, error, onLogin })
           </div>
 
           <div className="mt-8 max-w-2xl">
-            <h1 className="text-4xl md:text-5xl font-black leading-tight">Gestión simple para emprendedores reales</h1>
+            <h1 className="text-4xl md:text-5xl font-black leading-tight text-blue-950">Gestión simple para emprendedores reales</h1>
           </div>
 
           <div className="space-y-3 mt-8">
@@ -4454,12 +4454,17 @@ function ClienteReportes({ emp }) {
   );
 }
 
-function MiniLineChart({ title, subtitle, values, labels }) {
-  const max = Math.max(...values, 1);
-  const points = values.map((v, i) => {
-    const x = 8 + (i * 84) / Math.max(values.length - 1, 1);
+function MiniLineChart({ title, subtitle, values, labels, series }) {
+  const chartSeries = series || [{ label: title, values, color: "#2563eb", point: "#1d4ed8" }];
+  const max = Math.max(...chartSeries.flatMap((item) => item.values), 1);
+  const getPoint = (v, i, length) => {
+    const x = 8 + (i * 84) / Math.max(length - 1, 1);
     const y = 78 - (v / max) * 58;
-    return `${x},${y}`;
+    return { x, y };
+  };
+  const getLine = (item) => item.values.map((v, i) => {
+    const point = getPoint(v, i, item.values.length);
+    return `${point.x},${point.y}`;
   }).join(" ");
   return (
     <Card>
@@ -4469,12 +4474,28 @@ function MiniLineChart({ title, subtitle, values, labels }) {
           <p className="text-sm text-slate-300 mt-1">{subtitle}</p>
         </div>
         <div className="rounded-3xl bg-slate-950/70 border border-white/10 p-4">
+          {series && (
+            <div className="mb-3 flex flex-wrap gap-2">
+              {chartSeries.map((item) => (
+                <span key={item.label} className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white px-3 py-1 text-xs font-black text-slate-700">
+                  <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: item.color }} />
+                  {item.label}
+                </span>
+              ))}
+            </div>
+          )}
           <svg viewBox="0 0 100 86" className="w-full h-56 overflow-visible">
-            <polyline points={points} fill="none" stroke="currentColor" strokeWidth="3" className="text-sky-300 drop-shadow" strokeLinecap="round" strokeLinejoin="round" />
-            {values.map((v, i) => {
-              const x = 8 + (i * 84) / Math.max(values.length - 1, 1);
-              const y = 78 - (v / max) * 58;
-              return <g key={i}><circle cx={x} cy={y} r="2.7" className="fill-white" /><text x={x} y="84" textAnchor="middle" className="fill-slate-400 text-[4px] font-bold">{labels[i]}</text></g>;
+            {[20, 40, 60, 80].map((y) => <line key={y} x1="4" x2="96" y1={y} y2={y} stroke="rgba(100,116,139,.24)" strokeWidth="0.4" />)}
+            {chartSeries.map((item) => (
+              <polyline key={item.label} points={getLine(item)} fill="none" stroke={item.color} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+            ))}
+            {chartSeries.map((item) => item.values.map((v, i) => {
+              const point = getPoint(v, i, item.values.length);
+              return <circle key={`${item.label}-${i}`} cx={point.x} cy={point.y} r="2.8" fill={item.point || item.color} stroke="#ffffff" strokeWidth="1.1" />;
+            }))}
+            {(labels || []).map((label, i) => {
+              const x = 8 + (i * 84) / Math.max(labels.length - 1, 1);
+              return <text key={label} x={x} y="84" textAnchor="middle" className="fill-slate-500 text-[4px] font-black">{label}</text>;
             })}
           </svg>
         </div>
@@ -4580,7 +4601,8 @@ function ClienteFinanzas({ emp }) {
         <ColorStatCard icon={<AlertTriangle />} label="Costo desde recetas" value={money(costosPotenciales)} color="from-amber-300 via-orange-500 to-red-500" />
         <ColorStatCard icon={<CheckCircle2 />} label="Ganancia estimada" value={money(gananciaEstimada)} color="from-violet-500 via-purple-500 to-fuchsia-500" />
       </div>
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+      <MiniLineChart title="Ventas potenciales vs costos consumidos" subtitle="Comparativo estimado para ver margen y crecimiento en un solo gráfico." labels={months} series={[{ label: "Ventas", values: ventasLine, color: "#2563eb", point: "#1d4ed8" }, { label: "Costos", values: costosLine, color: "#f97316", point: "#ea580c" }]} />
+      <div className="hidden">
         <MiniLineChart title="Ventas potenciales" subtitle="Línea estimada de crecimiento según productos, precios y stock." values={ventasLine} labels={months} />
         <MiniLineChart title="Costos consumidos" subtitle="Comparativo estimado de costos tomados desde recetas." values={costosLine} labels={months} />
       </div>
@@ -4787,14 +4809,14 @@ function MensajesAdminPage({ mensajes, emprendimientos, onReply }) {
       <div className="relative overflow-hidden rounded-[2rem] border border-blue-500/25 bg-slate-950 p-6 shadow-2xl shadow-blue-950/30" style={{ backgroundImage: "linear-gradient(90deg, rgba(2,6,23,.94), rgba(14,116,144,.55), rgba(2,6,23,.90)), url('/fondo-saas.png')", backgroundSize: "cover", backgroundPosition: "center" }}>
         <div className="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div>
-            <p className="text-xs uppercase tracking-[0.3em] text-sky-200 font-black">Enrutamiento interno</p>
+            <p className="text-xs uppercase tracking-[0.3em] text-blue-800 font-black">Enrutamiento interno</p>
             <h2 className="text-2xl font-black text-white mt-2">Admin C&R ↔ Usuario / Emprendimiento</h2>
             <p className="text-sm text-slate-100 mt-2 max-w-3xl">Cada mensaje queda asociado a un emprendimiento, un usuario y el admin que responde. Más adelante en Supabase esto se guarda por ID para que ninguna respuesta llegue a otro cliente.</p>
           </div>
           <div className="grid grid-cols-3 gap-2 text-center">
-            <div className="rounded-2xl bg-white/10 border border-white/15 p-3"><p className="text-2xl font-black">{abiertos}</p><p className="text-[11px] text-sky-100">abiertos</p></div>
-            <div className="rounded-2xl bg-white/10 border border-white/15 p-3"><p className="text-2xl font-black">ID</p><p className="text-[11px] text-sky-100">ruteado</p></div>
-            <div className="rounded-2xl bg-white/10 border border-white/15 p-3"><p className="text-2xl font-black">C&R</p><p className="text-[11px] text-sky-100">responde</p></div>
+            <div className="rounded-2xl bg-blue-600 border border-blue-700 p-3 text-white"><p className="text-2xl font-black text-white">{abiertos}</p><p className="text-[11px] font-black uppercase tracking-wide text-white">abiertos</p></div>
+            <div className="rounded-2xl bg-cyan-600 border border-cyan-700 p-3 text-white"><p className="text-2xl font-black text-white">ID</p><p className="text-[11px] font-black uppercase tracking-wide text-white">ruteado</p></div>
+            <div className="rounded-2xl bg-emerald-600 border border-emerald-700 p-3 text-white"><p className="text-2xl font-black text-white">C&R</p><p className="text-[11px] font-black uppercase tracking-wide text-white">responde</p></div>
           </div>
         </div>
       </div>
