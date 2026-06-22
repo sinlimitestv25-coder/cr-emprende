@@ -888,6 +888,25 @@ function App() {
     );
   }
 
+  function updatePortalVisibility(empId, visible) {
+    const currentEmp = emprendimientos.find((emp) => emp.id === empId);
+    if (accountStatusLabel(currentEmp) !== "Activo") return;
+    setHistorialAdmin((prev) => [
+      {
+        id: `ADM-${Date.now().toString().slice(-6)}`,
+        adminId: "ADMIN-CR-001",
+        admin: "Super Administrador",
+        emprendimientoId: empId,
+        emprendimiento: currentEmp?.nombre || empId,
+        accion: visible ? "portal_activado" : "portal_ocultado",
+        detalle: `${currentEmp?.nombre || empId}: portal ${visible ? "visible" : "oculto"}`,
+        fecha: new Date().toLocaleString("es-AR", { dateStyle: "short", timeStyle: "short" }),
+      },
+      ...prev,
+    ]);
+    setEmprendimientos((prev) => prev.map((emp) => emp.id === empId ? { ...emp, portalVisible: visible } : emp));
+  }
+
   function sendMensaje(nuevo) {
     setMensajes((prev) => [
       {
@@ -1085,6 +1104,7 @@ function App() {
               <SidebarButton active={activePage === "usuarios"} icon={<Users />} label="Usuarios" onClick={() => setActivePage("usuarios")} />
               <SidebarButton active={activePage === "emprendimientos"} icon={<Building2 />} label="Emprendimientos" onClick={() => setActivePage("emprendimientos")} />
               <SidebarButton active={activePage === "suspendidos"} icon={<AlertTriangle />} label="Suspendidos" onClick={() => setActivePage("suspendidos")} />
+              <SidebarButton active={activePage === "portales"} icon={<Globe />} label="Portales" onClick={() => setActivePage("portales")} />
               <SidebarButton active={activePage === "rubros"} icon={<Boxes />} label="Rubros" onClick={() => setActivePage("rubros")} />
               <SidebarButton active={activePage === "modulos"} icon={<Settings />} label="Módulos" onClick={() => setActivePage("modulos")} />
               <SidebarButton active={activePage === "planes"} icon={<CreditCard />} label="Planes" onClick={() => setActivePage("planes")} />
@@ -1133,6 +1153,7 @@ function App() {
           {isAdmin && activePage === "usuarios" && <UsuariosPage usuarios={usuarios} emprendimientos={emprendimientos} onNewUser={() => setIsUserModalOpen(true)} onRenewUser={renewUser} onChangePassword={changeUserPassword} />}
           {isAdmin && activePage === "emprendimientos" && <EmprendimientosPage emprendimientos={filteredEmprendimientos} search={search} setSearch={setSearch} onNewBusiness={() => setIsBusinessWizardOpen(true)} onChangeAccountStatus={updateBusinessAccountStatus} setSelectedEmpId={setSelectedEmpId} setActivePage={setActivePage} />}
           {isAdmin && activePage === "suspendidos" && <SuspendidosPage emprendimientos={emprendimientos} onChangeAccountStatus={updateBusinessAccountStatus} />}
+          {isAdmin && activePage === "portales" && <PortalesAdminPage emprendimientos={emprendimientos} publicaciones={publicaciones} portalViews={portalViews} onUpdatePortalVisibility={updatePortalVisibility} />}
           {isAdmin && activePage === "rubros" && <RubrosManagerPage rubros={rubros} modules={modulesBase} onChange={setRubros} />}
           {isAdmin && activePage === "modulos" && <ModulosPage modules={modulesBase} rubros={rubros} />}
           {isAdmin && activePage === "planes" && <PlanesPage planes={planes} />}
@@ -2267,6 +2288,94 @@ function HistorialAdminPage({ historial }) {
               <p className="text-sm text-slate-300 mt-1">Suspender, reactivar o eliminar una cuenta va a crear el primer registro.</p>
             </div>
           )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+function PortalesAdminPage({ emprendimientos, publicaciones, portalViews, onUpdatePortalVisibility }) {
+  const [copied, setCopied] = useState("");
+  const rows = emprendimientos.map((emp) => {
+    const status = accountStatusLabel(emp);
+    const activePublications = publicaciones.filter((item) => item.emprendimientoId === emp.id && item.estado === "Visible").length;
+    const totalPublications = publicaciones.filter((item) => item.emprendimientoId === emp.id).length;
+    const visible = status === "Activo" && emp.portalVisible !== false;
+    return { ...emp, status, visible, activePublications, totalPublications, views: Number(portalViews[emp.id] || 0) };
+  });
+  const visibles = rows.filter((row) => row.visible).length;
+  const ocultos = rows.filter((row) => !row.visible).length;
+  const totalPublicaciones = rows.reduce((acc, row) => acc + row.totalPublications, 0);
+  const totalViews = rows.reduce((acc, row) => acc + row.views, 0);
+
+  function portalLink(empId) {
+    if (typeof window === "undefined") return `?portal=${empId}`;
+    return `${window.location.origin}${window.location.pathname}?portal=${empId}`;
+  }
+
+  async function copyPortalLink(empId) {
+    const link = portalLink(empId);
+    try {
+      await navigator.clipboard.writeText(link);
+      setCopied(`Link copiado: ${empId}`);
+    } catch {
+      setCopied(link);
+    }
+  }
+
+  return (
+    <div className="space-y-6">
+      <PageHeader title="Portales" subtitle="Control de portales publicos, publicaciones, visibilidad y links para compartir." />
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <StatCard icon={<Globe />} label="Visibles" value={visibles} className={statColorStyles.emerald.card} iconClassName={statColorStyles.emerald.icon} />
+        <StatCard icon={<EyeOff />} label="Ocultos" value={ocultos} className={statColorStyles.rose.card} iconClassName={statColorStyles.rose.icon} />
+        <StatCard icon={<Package />} label="Publicaciones" value={totalPublicaciones} className={statColorStyles.sky.card} iconClassName={statColorStyles.sky.icon} />
+        <StatCard icon={<Eye />} label="Visitas" value={totalViews} className={statColorStyles.violet.card} iconClassName={statColorStyles.violet.icon} />
+      </div>
+
+      {copied && <div className="rounded-2xl border border-emerald-300/30 bg-emerald-500/10 p-4 text-sm font-bold text-emerald-200">{copied}</div>}
+
+      <Card>
+        <CardContent className="p-5 overflow-x-auto">
+          <div className="mb-5">
+            <h2 className="text-xl font-bold text-white">Portales por emprendedor</h2>
+            <p className="text-sm text-slate-300 mt-1">La cuenta suspendida o eliminada mantiene el portal oculto hasta reactivar la cuenta.</p>
+          </div>
+          <table className="w-full text-sm min-w-[1080px]">
+            <TableHead headers={["Emprendimiento", "Cuenta", "Portal", "Publicaciones", "Visitas", "Link", "Acciones"]} />
+            <tbody>
+              {rows.map((emp) => (
+                <tr key={emp.id} className="border-b border-slate-800">
+                  <td className="py-4 pr-4">
+                    <p className="font-black text-white">{emp.nombre}</p>
+                    <p className="text-xs text-slate-300">{emp.id} - {emp.rubro}</p>
+                  </td>
+                  <td className="py-4 pr-4"><StatusBadge label={emp.status} tone={accountStatusTone(emp)} /></td>
+                  <td className="py-4 pr-4"><StatusBadge label={emp.visible ? "Visible" : "Oculto"} tone={emp.visible ? "success" : "danger"} /></td>
+                  <td className="py-4 pr-4 text-slate-100">{emp.activePublications}/{emp.totalPublications}</td>
+                  <td className="py-4 pr-4 text-slate-100 font-black">{emp.views}</td>
+                  <td className="py-4 pr-4">
+                    <Button type="button" onClick={() => copyPortalLink(emp.id)} className="bg-blue-600 text-white px-3 py-2 text-xs">
+                      <Copy className="w-3.5 h-3.5 mr-1" /> Copiar link
+                    </Button>
+                  </td>
+                  <td className="py-4 pr-4">
+                    {emp.status !== "Activo" ? (
+                      <span className="text-xs font-bold text-slate-300">Reactivar cuenta primero</span>
+                    ) : (
+                      <div className="flex flex-wrap gap-2">
+                        {emp.visible ? (
+                          <Button type="button" onClick={() => onUpdatePortalVisibility(emp.id, false)} className="bg-red-600 text-white px-3 py-2 text-xs">Ocultar</Button>
+                        ) : (
+                          <Button type="button" onClick={() => onUpdatePortalVisibility(emp.id, true)} className="bg-emerald-600 text-white px-3 py-2 text-xs">Activar</Button>
+                        )}
+                      </div>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </CardContent>
       </Card>
     </div>
