@@ -249,10 +249,15 @@ const STORAGE_KEYS = {
   publicaciones: "cr-emprende-publicaciones",
   consultasPortal: "cr-emprende-consultas-portal",
   portalConfig: "cr-emprende-portal-config",
+  portalCache: "cr-emprende-portal-cache",
   portalViews: "cr-emprende-portal-views",
   commissionSettings: "cr-emprende-commission-settings",
   portalCommissions: "cr-emprende-portal-commissions",
 };
+
+const PORTAL_IMAGE_MAX_UPLOAD_BYTES = 2 * 1024 * 1024;
+const PORTAL_IMAGE_TARGET_BYTES = 600 * 1024;
+const PORTAL_IMAGE_MAX_DIMENSION = 1400;
 
 function loadStoredValue(key, fallback) {
   if (typeof window === "undefined") return fallback;
@@ -277,6 +282,110 @@ function getDefaultPortalConfig(emp) {
   return {
     descripcion: `Conocé las publicaciones de ${emp?.nombre || "este emprendimiento"} y consultá directo por WhatsApp.`,
     color: "cyan",
+  };
+}
+
+function buildPortalCache(emprendimientos, publicaciones, portalConfig) {
+  const now = new Date().toISOString();
+  return emprendimientos.reduce((acc, emp) => {
+    acc[emp.id] = {
+      version: now,
+      updatedAt: now,
+      emp: {
+        id: emp.id,
+        nombre: emp.nombre,
+        rubro: emp.rubro,
+        actividad: emp.actividad,
+        logo: emp.logo,
+        whatsapp: emp.whatsapp,
+        instagram: emp.instagram,
+      },
+      config: {
+        ...getDefaultPortalConfig(emp),
+        ...(portalConfig[emp.id] || {}),
+      },
+      publicaciones: publicaciones.filter((item) => item.emprendimientoId === emp.id && item.estado === "Visible"),
+    };
+    return acc;
+  }, {});
+}
+
+function dataUrlSizeBytes(dataUrl) {
+  if (!dataUrl || typeof dataUrl !== "string") return 0;
+  const base64 = dataUrl.split(",")[1] || "";
+  return Math.round((base64.length * 3) / 4);
+}
+
+function formatBytes(bytes) {
+  if (!bytes) return "0 KB";
+  if (bytes >= 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  return `${Math.round(bytes / 1024)} KB`;
+}
+
+function blobToDataUrl(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
+
+function loadImageFromFile(file) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const image = new Image();
+    image.onload = () => {
+      URL.revokeObjectURL(url);
+      resolve(image);
+    };
+    image.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error("No se pudo leer la imagen."));
+    };
+    image.src = url;
+  });
+}
+
+function canvasToBlob(canvas, type, quality) {
+  return new Promise((resolve, reject) => {
+    canvas.toBlob((blob) => {
+      if (blob) resolve(blob);
+      else reject(new Error("No se pudo optimizar la imagen."));
+    }, type, quality);
+  });
+}
+
+async function compressPortalImage(file) {
+  if (!file) return null;
+  if (file.size > PORTAL_IMAGE_MAX_UPLOAD_BYTES) {
+    throw new Error(`La imagen supera el limite de ${formatBytes(PORTAL_IMAGE_MAX_UPLOAD_BYTES)}.`);
+  }
+
+  const image = await loadImageFromFile(file);
+  const scale = Math.min(1, PORTAL_IMAGE_MAX_DIMENSION / Math.max(image.width, image.height));
+  const width = Math.max(1, Math.round(image.width * scale));
+  const height = Math.max(1, Math.round(image.height * scale));
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext("2d");
+  ctx.drawImage(image, 0, 0, width, height);
+
+  let quality = 0.82;
+  let blob = await canvasToBlob(canvas, "image/webp", quality);
+  while (blob.size > PORTAL_IMAGE_TARGET_BYTES && quality > 0.45) {
+    quality -= 0.08;
+    blob = await canvasToBlob(canvas, "image/webp", quality);
+  }
+
+  const dataUrl = await blobToDataUrl(blob);
+  return {
+    dataUrl,
+    originalBytes: file.size,
+    finalBytes: dataUrlSizeBytes(dataUrl),
+    width,
+    height,
   };
 }
 
@@ -432,6 +541,7 @@ function App() {
   const [publicaciones, setPublicaciones] = useState(() => loadStoredValue(STORAGE_KEYS.publicaciones, exhibicionInicial));
   const [consultasPortal, setConsultasPortal] = useState(() => loadStoredValue(STORAGE_KEYS.consultasPortal, []));
   const [portalConfig, setPortalConfig] = useState(() => loadStoredValue(STORAGE_KEYS.portalConfig, {}));
+  const [portalCache, setPortalCache] = useState(() => loadStoredValue(STORAGE_KEYS.portalCache, {}));
   const [portalViews, setPortalViews] = useState(() => loadStoredValue(STORAGE_KEYS.portalViews, {}));
   const [commissionSettings, setCommissionSettings] = useState(() => loadStoredValue(STORAGE_KEYS.commissionSettings, defaultCommissionSettings));
   const [portalCommissions, setPortalCommissions] = useState(() => loadStoredValue(STORAGE_KEYS.portalCommissions, []));
@@ -480,6 +590,14 @@ function App() {
   }, [portalConfig]);
 
   useEffect(() => {
+    setPortalCache(buildPortalCache(emprendimientos, publicaciones, portalConfig));
+  }, [emprendimientos, publicaciones, portalConfig]);
+
+  useEffect(() => {
+    saveStoredValue(STORAGE_KEYS.portalCache, portalCache);
+  }, [portalCache]);
+
+  useEffect(() => {
     saveStoredValue(STORAGE_KEYS.portalViews, portalViews);
   }, [portalViews]);
 
@@ -502,6 +620,9 @@ function App() {
       }
       if (event.key === STORAGE_KEYS.portalConfig) {
         setPortalConfig(loadStoredValue(STORAGE_KEYS.portalConfig, {}));
+      }
+      if (event.key === STORAGE_KEYS.portalCache) {
+        setPortalCache(loadStoredValue(STORAGE_KEYS.portalCache, {}));
       }
       if (event.key === STORAGE_KEYS.portalViews) {
         setPortalViews(loadStoredValue(STORAGE_KEYS.portalViews, {}));
@@ -738,11 +859,13 @@ function App() {
   }
 
   if (portalEmpIdFromUrl) {
+    const cachedPortal = portalCache[portalEmpIdFromUrl] || buildPortalCache(emprendimientos, publicaciones, portalConfig)[portalEmpIdFromUrl];
     return (
       <PortalPublico
-        emp={emprendimientos.find((e) => e.id === portalEmpIdFromUrl)}
-        publicaciones={publicaciones.filter((item) => item.emprendimientoId === portalEmpIdFromUrl && item.estado === "Visible")}
-        config={portalConfig[portalEmpIdFromUrl] || getDefaultPortalConfig(emprendimientos.find((e) => e.id === portalEmpIdFromUrl))}
+        emp={cachedPortal?.emp}
+        publicaciones={cachedPortal?.publicaciones || []}
+        config={cachedPortal?.config}
+        cacheInfo={cachedPortal}
         onConsulta={addPortalConsulta}
         onView={registerPortalView}
       />
@@ -827,7 +950,7 @@ function App() {
           {!isAdmin && activePage === "proveedores" && <ClienteProveedores emp={selectedEmp} />}
           {!isAdmin && activePage === "recetas" && <ClienteRecetas emp={selectedEmp} />}
           {!isAdmin && activePage === "clientes" && <ClienteClientes emp={selectedEmp} potenciales={consultasPortal.filter((consulta) => consulta.emprendimientoId === selectedEmp.id && consulta.estado === "Potencial")} />}
-          {!isAdmin && activePage === "exhibicion" && <ClienteExhibicion emp={selectedEmp} publicaciones={publicaciones.filter((item) => item.emprendimientoId === selectedEmp.id)} consultas={consultasPortal.filter((consulta) => consulta.emprendimientoId === selectedEmp.id)} portalConfig={portalConfig[selectedEmp.id] || getDefaultPortalConfig(selectedEmp)} portalViews={portalViews[selectedEmp.id] || 0} commissionSettings={commissionSettings} portalCommissions={portalCommissions.filter((item) => item.emprendimientoId === selectedEmp.id)} setPublicaciones={setPublicaciones} onUpdateConsulta={updatePortalConsulta} onUpdatePortalConfig={updatePortalConfig} onRegisterSale={registerPortalSale} />}
+          {!isAdmin && activePage === "exhibicion" && <ClienteExhibicion emp={selectedEmp} publicaciones={publicaciones.filter((item) => item.emprendimientoId === selectedEmp.id)} consultas={consultasPortal.filter((consulta) => consulta.emprendimientoId === selectedEmp.id)} portalConfig={portalConfig[selectedEmp.id] || getDefaultPortalConfig(selectedEmp)} portalViews={portalViews[selectedEmp.id] || 0} portalCacheInfo={portalCache[selectedEmp.id]} commissionSettings={commissionSettings} portalCommissions={portalCommissions.filter((item) => item.emprendimientoId === selectedEmp.id)} setPublicaciones={setPublicaciones} onUpdateConsulta={updatePortalConsulta} onUpdatePortalConfig={updatePortalConfig} onRegisterSale={registerPortalSale} />}
           {!isAdmin && activePage === "presupuestos" && <ClientePresupuestos emp={selectedEmp} />}
           {!isAdmin && activePage === "pedidos" && <ClientePedidos emp={selectedEmp} />}
           {!isAdmin && activePage === "finanzas" && <ClienteFinanzas emp={selectedEmp} />}
@@ -997,7 +1120,7 @@ function LoginScreen({ email, setEmail, password, setPassword, error, onLogin })
   );
 }
 
-function PortalPublico({ emp, publicaciones, config, onConsulta, onView }) {
+function PortalPublico({ emp, publicaciones, config, cacheInfo, onConsulta, onView }) {
   const [selectedPublication, setSelectedPublication] = useState(null);
   const [form, setForm] = useState({ nombre: "", whatsapp: "", mensaje: "" });
   const [sent, setSent] = useState(false);
@@ -3412,9 +3535,12 @@ function ClienteRecetas({ emp }) {
   );
 }
 
-function ClienteExhibicion({ emp, publicaciones, consultas, portalConfig, portalViews, commissionSettings, portalCommissions, setPublicaciones, onUpdateConsulta, onUpdatePortalConfig, onRegisterSale }) {
+function ClienteExhibicion({ emp, publicaciones, consultas, portalConfig, portalViews, portalCacheInfo, commissionSettings, portalCommissions, setPublicaciones, onUpdateConsulta, onUpdatePortalConfig, onRegisterSale }) {
   const [showNewPublication, setShowNewPublication] = useState(false);
-  const [newPublication, setNewPublication] = useState({ titulo: "", descripcion: "", precio: "", categoria: "", estado: "Visible", imagen: "" });
+  const [newPublication, setNewPublication] = useState({ titulo: "", descripcion: "", precio: "", categoria: "", estado: "Visible", imagen: "", imageMeta: null });
+  const [imageProcessing, setImageProcessing] = useState(false);
+  const [imageMessage, setImageMessage] = useState("");
+  const [imageError, setImageError] = useState("");
   const [saleModal, setSaleModal] = useState(null);
   const [saleAmount, setSaleAmount] = useState("");
   const portalUrl = typeof window !== "undefined" ? `${window.location.origin}${window.location.pathname}?portal=${encodeURIComponent(emp.id)}` : `?portal=${emp.id}`;
@@ -3431,13 +3557,35 @@ function ClienteExhibicion({ emp, publicaciones, consultas, portalConfig, portal
     }
   }
 
-  function handleImageFile(file) {
+  async function handleImageFile(file) {
     if (!file) return;
-    setNewPublication((prev) => ({ ...prev, imagen: URL.createObjectURL(file) }));
+    setImageError("");
+    setImageMessage("");
+    setImageProcessing(true);
+    try {
+      const optimized = await compressPortalImage(file);
+      setNewPublication((prev) => ({
+        ...prev,
+        imagen: optimized.dataUrl,
+        imageMeta: {
+          originalBytes: optimized.originalBytes,
+          finalBytes: optimized.finalBytes,
+          width: optimized.width,
+          height: optimized.height,
+        },
+      }));
+      setImageMessage(`Imagen optimizada: ${formatBytes(optimized.originalBytes)} -> ${formatBytes(optimized.finalBytes)}.`);
+    } catch (error) {
+      setNewPublication((prev) => ({ ...prev, imagen: "", imageMeta: null }));
+      setImageError(error?.message || "No se pudo procesar la imagen.");
+    } finally {
+      setImageProcessing(false);
+    }
   }
 
   function createPublication(event) {
     event.preventDefault();
+    if (imageProcessing) return;
     if (!newPublication.titulo.trim()) return;
     const created = {
       id: `PUB-${Date.now()}`,
@@ -3448,9 +3596,12 @@ function ClienteExhibicion({ emp, publicaciones, consultas, portalConfig, portal
       categoria: newPublication.categoria.trim() || "General",
       estado: newPublication.estado,
       imagen: newPublication.imagen,
+      imageMeta: newPublication.imageMeta,
     };
     setPublicaciones((prev) => [created, ...prev]);
-    setNewPublication({ titulo: "", descripcion: "", precio: "", categoria: "", estado: "Visible", imagen: "" });
+    setNewPublication({ titulo: "", descripcion: "", precio: "", categoria: "", estado: "Visible", imagen: "", imageMeta: null });
+    setImageMessage("");
+    setImageError("");
     setShowNewPublication(false);
   }
 
@@ -3588,10 +3739,14 @@ function ClienteExhibicion({ emp, publicaciones, consultas, portalConfig, portal
               <InputField icon={<DollarSign />} label="Precio opcional" type="number" min="0" value={newPublication.precio} onChange={(e) => setNewPublication({ ...newPublication, precio: e.target.value })} placeholder="Ej: 12000" />
               <InputField icon={<Boxes />} label="Categoría" value={newPublication.categoria} onChange={(e) => setNewPublication({ ...newPublication, categoria: e.target.value })} placeholder="Ej: Regalos" />
               <SelectField label="Estado" value={newPublication.estado} onChange={(e) => setNewPublication({ ...newPublication, estado: e.target.value })} options={["Visible", "Oculto"]} />
-              <InputField icon={<Globe />} label="URL de imagen" value={newPublication.imagen} onChange={(e) => setNewPublication({ ...newPublication, imagen: e.target.value })} placeholder="https://..." />
+              <InputField icon={<Globe />} label="URL de imagen" value={newPublication.imagen} onChange={(e) => { setImageError(""); setImageMessage(""); setNewPublication({ ...newPublication, imagen: e.target.value, imageMeta: null }); }} placeholder="https://..." />
               <div>
                 <label className="text-sm font-bold text-slate-200 mb-2 block">Subir foto local</label>
                 <input type="file" accept="image/*" onChange={(e) => handleImageFile(e.target.files?.[0])} className="w-full rounded-xl bg-slate-950 border border-slate-700 px-3 py-3 text-white" />
+                <p className="mt-2 text-xs text-slate-400">Maximo permitido: {formatBytes(PORTAL_IMAGE_MAX_UPLOAD_BYTES)}. La app intenta dejarla cerca de {formatBytes(PORTAL_IMAGE_TARGET_BYTES)}.</p>
+                {imageProcessing && <p className="mt-2 text-xs font-bold text-sky-300">Optimizando imagen...</p>}
+                {imageMessage && <p className="mt-2 text-xs font-bold text-emerald-300">{imageMessage}</p>}
+                {imageError && <p className="mt-2 text-xs font-bold text-red-300">{imageError}</p>}
               </div>
               <div className="md:col-span-2">
                 <label className="text-sm font-bold text-slate-200 mb-2 block">Descripción</label>
@@ -3600,7 +3755,7 @@ function ClienteExhibicion({ emp, publicaciones, consultas, portalConfig, portal
             </div>
             <div className="flex justify-end gap-3">
               <Button type="button" onClick={() => setShowNewPublication(false)} className="bg-slate-800 text-white">Cancelar</Button>
-              <Button type="submit" className="bg-blue-500 text-black">Publicar</Button>
+              <Button type="submit" disabled={imageProcessing} className="bg-blue-500 text-black">{imageProcessing ? "Optimizando..." : "Publicar"}</Button>
             </div>
           </form>
         </ModalShell>
