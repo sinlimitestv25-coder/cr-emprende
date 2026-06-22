@@ -21,6 +21,19 @@ button, input, select { font: inherit; }
 button { cursor: pointer; }
 input, select, textarea { color: #172033; }
 
+:root {
+  --cr-ink: #172033;
+  --cr-muted: #475569;
+  --cr-soft: #f8fafc;
+  --cr-line: rgba(148, 163, 184, .36);
+  --cr-blue: #2563eb;
+  --cr-sky: #0284c7;
+  --cr-emerald: #059669;
+  --cr-amber: #d97706;
+  --cr-red: #dc2626;
+  --cr-violet: #7c3aed;
+}
+
 /* Premium scroll */
 ::-webkit-scrollbar { width: 10px; height: 10px; }
 ::-webkit-scrollbar-track { background: #e5eaf1; }
@@ -136,6 +149,38 @@ textarea::placeholder {
   color: #0f172a !important;
 }
 
+.text-sky-300 {
+  color: var(--cr-blue) !important;
+}
+
+.text-cyan-200,
+.text-cyan-300 {
+  color: var(--cr-sky) !important;
+}
+
+.text-emerald-100,
+.text-emerald-200,
+.text-emerald-300 {
+  color: var(--cr-emerald) !important;
+}
+
+.text-amber-100,
+.text-amber-200,
+.text-amber-300 {
+  color: var(--cr-amber) !important;
+}
+
+.text-red-200,
+.text-red-300 {
+  color: var(--cr-red) !important;
+}
+
+.text-violet-100,
+.text-violet-200,
+.text-violet-300 {
+  color: var(--cr-violet) !important;
+}
+
 .border-white\/10,
 .border-white\/15,
 .border-white\/20,
@@ -162,6 +207,35 @@ table tr:hover {
   background-color: rgba(239, 246, 255, .82);
 }
 
+table thead tr,
+tr.bg-slate-950\/60 {
+  background: linear-gradient(180deg, #eff6ff, #e0f2fe) !important;
+  border-bottom: 1px solid rgba(37, 99, 235, .26) !important;
+  color: #1d4ed8 !important;
+}
+
+table thead th,
+table thead th span,
+tr.bg-slate-950\/60 th,
+tr.bg-slate-950\/60 span {
+  color: #1d4ed8 !important;
+  font-weight: 900;
+}
+
+table tbody td {
+  color: #334155 !important;
+}
+
+table tbody td.font-bold,
+table tbody td .font-bold,
+table tbody td .font-black {
+  color: #172033 !important;
+}
+
+table tbody tr {
+  border-color: rgba(148, 163, 184, .24) !important;
+}
+
 .fixed.bg-black\/70 {
   background-color: rgba(15, 23, 42, .34) !important;
 }
@@ -173,6 +247,45 @@ table tr:hover {
 .bg-white\/18,
 .bg-white\/20 {
   background-color: rgba(255, 255, 255, .72) !important;
+}
+
+.bg-blue-500\/10,
+.bg-blue-500\/15,
+.bg-blue-500\/20,
+.bg-cyan-400\/10,
+.bg-cyan-400\/15,
+.bg-cyan-500\/10 {
+  background-color: #dbeafe !important;
+  border-color: rgba(37, 99, 235, .22) !important;
+}
+
+.bg-emerald-400\/10,
+.bg-emerald-400\/15,
+.bg-emerald-500\/10,
+.bg-emerald-500\/15,
+.bg-emerald-500\/20 {
+  background-color: #dcfce7 !important;
+  border-color: rgba(5, 150, 105, .22) !important;
+}
+
+.bg-amber-400\/10,
+.bg-amber-400\/15,
+.bg-amber-500\/20 {
+  background-color: #fef3c7 !important;
+  border-color: rgba(217, 119, 6, .24) !important;
+}
+
+.bg-red-400\/10,
+.bg-red-400\/15,
+.bg-red-500\/10 {
+  background-color: #fee2e2 !important;
+  border-color: rgba(220, 38, 38, .22) !important;
+}
+
+.bg-violet-500\/15,
+.bg-violet-500\/20 {
+  background-color: #ede9fe !important;
+  border-color: rgba(124, 58, 237, .24) !important;
 }
 
 [style*="fondo-saas.png"] {
@@ -221,6 +334,19 @@ table tr:hover {
 
 .bg-gradient-to-br,
 .bg-gradient-to-br .text-white,
+.bg-gradient-to-br .text-sky-300,
+.bg-gradient-to-br .text-cyan-200,
+.bg-gradient-to-br .text-cyan-300,
+.bg-gradient-to-br .text-emerald-100,
+.bg-gradient-to-br .text-emerald-200,
+.bg-gradient-to-br .text-emerald-300,
+.bg-gradient-to-br .text-amber-100,
+.bg-gradient-to-br .text-amber-200,
+.bg-gradient-to-br .text-amber-300,
+.bg-gradient-to-br .text-red-200,
+.bg-gradient-to-br .text-red-300,
+.bg-gradient-to-br .text-violet-100,
+.bg-gradient-to-br .text-violet-200,
 .bg-gradient-to-br .text-slate-100,
 .bg-gradient-to-br .text-slate-100\/90,
 .bg-gradient-to-br .text-slate-200,
@@ -234,6 +360,19 @@ table tr:hover {
 .bg-gradient-to-br .text-white\/70,
 .bg-gradient-to-r,
 .bg-gradient-to-r .text-white,
+.bg-gradient-to-r .text-sky-300,
+.bg-gradient-to-r .text-cyan-200,
+.bg-gradient-to-r .text-cyan-300,
+.bg-gradient-to-r .text-emerald-100,
+.bg-gradient-to-r .text-emerald-200,
+.bg-gradient-to-r .text-emerald-300,
+.bg-gradient-to-r .text-amber-100,
+.bg-gradient-to-r .text-amber-200,
+.bg-gradient-to-r .text-amber-300,
+.bg-gradient-to-r .text-red-200,
+.bg-gradient-to-r .text-red-300,
+.bg-gradient-to-r .text-violet-100,
+.bg-gradient-to-r .text-violet-200,
 .bg-gradient-to-r .text-slate-100,
 .bg-gradient-to-r .text-slate-100\/90,
 .bg-gradient-to-r .text-slate-200,
@@ -258,4 +397,153 @@ table tr:hover {
 .bg-gradient-to-r .text-slate-950,
 .bg-gradient-to-r .text-black {
   color: #0f172a !important;
+}
+
+.bg-gradient-to-br .rounded-full,
+.bg-gradient-to-r .rounded-full {
+  background-color: rgba(255, 255, 255, .18) !important;
+  border-color: rgba(255, 255, 255, .32) !important;
+  color: #ffffff !important;
+}
+
+.bg-gradient-to-br input,
+.bg-gradient-to-r input {
+  color: #172033 !important;
+}
+
+[style*="fondo-saas.png"] .text-sky-300,
+[style*="fondo-saas.png"] .text-cyan-200,
+[style*="fondo-saas.png"] .text-cyan-300 {
+  color: #1d4ed8 !important;
+}
+
+[style*="fondo-saas.png"] .text-white,
+[style*="fondo-saas.png"] .text-slate-100,
+[style*="fondo-saas.png"] .text-slate-200 {
+  color: #172033 !important;
+}
+
+.rounded-2xl.border.bg-blue-500\/10,
+.rounded-2xl.border.bg-cyan-500\/10,
+.rounded-2xl.border.bg-emerald-400\/10,
+.rounded-2xl.border.bg-amber-400\/10,
+.rounded-2xl.border.bg-red-400\/10,
+.rounded-2xl.border.bg-violet-500\/20 {
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.72), 0 8px 22px rgba(15, 23, 42, .06);
+}
+
+.rounded-2xl.border.bg-blue-500\/10 .text-sky-300,
+.rounded-2xl.border.bg-cyan-500\/10 .text-cyan-200,
+.rounded-2xl.border.bg-cyan-500\/10 .text-cyan-300 {
+  color: #1d4ed8 !important;
+}
+
+.rounded-2xl.border.bg-emerald-400\/10 .text-emerald-200,
+.rounded-2xl.border.bg-emerald-400\/10 .text-emerald-300 {
+  color: #047857 !important;
+}
+
+.rounded-2xl.border.bg-amber-400\/10 .text-amber-100,
+.rounded-2xl.border.bg-amber-400\/10 .text-amber-200,
+.rounded-2xl.border.bg-amber-400\/10 .text-amber-300 {
+  color: #92400e !important;
+}
+
+.rounded-2xl.border.bg-red-400\/10 .text-red-200,
+.rounded-2xl.border.bg-red-400\/10 .text-red-300 {
+  color: #b91c1c !important;
+}
+
+.rounded-full.bg-blue-500\/10,
+.rounded-full.bg-blue-500\/15,
+.rounded-full.bg-blue-500\/20,
+.rounded-full.bg-cyan-400\/10 {
+  background-color: var(--cr-blue) !important;
+  border-color: var(--cr-blue) !important;
+  color: #ffffff !important;
+}
+
+.rounded-full.bg-emerald-400\/15,
+.rounded-full.bg-emerald-500\/20 {
+  background-color: var(--cr-emerald) !important;
+  border-color: var(--cr-emerald) !important;
+  color: #ffffff !important;
+}
+
+.rounded-full.bg-amber-400\/15,
+.rounded-full.bg-amber-500\/20 {
+  background-color: var(--cr-amber) !important;
+  border-color: var(--cr-amber) !important;
+  color: #ffffff !important;
+}
+
+.rounded-full.bg-red-400\/15,
+.rounded-full.bg-red-500\/20 {
+  background-color: var(--cr-red) !important;
+  border-color: var(--cr-red) !important;
+  color: #ffffff !important;
+}
+
+.rounded-full.bg-slate-500\/15 {
+  background-color: #475569 !important;
+  border-color: #475569 !important;
+  color: #ffffff !important;
+}
+
+button.bg-emerald-500\/15,
+button.bg-emerald-500\/20,
+button.bg-emerald-500 {
+  background-color: var(--cr-emerald) !important;
+  border-color: var(--cr-emerald) !important;
+  color: #ffffff !important;
+}
+
+button.bg-violet-500\/15,
+button.bg-violet-500\/20,
+button.bg-violet-500 {
+  background-color: var(--cr-violet) !important;
+  border-color: var(--cr-violet) !important;
+  color: #ffffff !important;
+}
+
+button.bg-blue-500,
+button.bg-blue-500\/10,
+button.bg-blue-500\/15,
+button.bg-blue-500\/20 {
+  background-color: var(--cr-blue) !important;
+  border-color: var(--cr-blue) !important;
+  color: #ffffff !important;
+}
+
+button.bg-slate-800 {
+  background-color: #334155 !important;
+  border-color: #334155 !important;
+  color: #ffffff !important;
+}
+
+button.bg-green-500 {
+  background-color: #16a34a !important;
+  border-color: #16a34a !important;
+  color: #ffffff !important;
+}
+
+button.bg-red-500,
+button.bg-red-500\/10,
+button.bg-red-500\/15,
+button.bg-red-500\/20 {
+  background-color: var(--cr-red) !important;
+  border-color: var(--cr-red) !important;
+  color: #ffffff !important;
+}
+
+button[class*="bg-"] svg,
+button[class*="bg-"] .text-white,
+button[class*="bg-"] .text-slate-950,
+button[class*="bg-"] .text-black,
+button[class*="bg-"] .text-emerald-100,
+button[class*="bg-"] .text-emerald-200,
+button[class*="bg-"] .text-violet-100,
+button[class*="bg-"] .text-violet-200 {
+  color: #ffffff !important;
+  stroke: currentColor;
 }
