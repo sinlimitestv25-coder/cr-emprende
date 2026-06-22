@@ -1608,7 +1608,7 @@ function UsuariosPage({ usuarios, emprendimientos, onNewUser, onRenewUser, onCha
                         <Button
                           type="button"
                           onClick={(e) => { e.stopPropagation(); setVisiblePasswords((prev) => ({ ...prev, [u.id]: !prev[u.id] })); }}
-                          className="rounded-md bg-cyan-500/15 text-cyan-200 border border-cyan-400/25 hover:bg-cyan-500/25 !p-1"
+                          className="rounded-md bg-amber-500 text-white border border-amber-500 hover:bg-amber-500 !p-1"
                           title="Mostrar u ocultar contraseña"
                         >
                           {isVisible ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
@@ -1633,7 +1633,7 @@ function UsuariosPage({ usuarios, emprendimientos, onNewUser, onRenewUser, onCha
                             key={months}
                             type="button"
                             onClick={(e) => { e.stopPropagation(); setRenewal({ user: u, months }); }}
-                            className="rounded-md bg-emerald-500/15 text-emerald-200 border border-emerald-400/25 hover:bg-emerald-500/25 !px-1.5 !py-1 text-[10px] leading-none font-black min-w-[30px]"
+                            className="rounded-md bg-orange-500 text-white border border-orange-500 hover:bg-orange-500 !px-1.5 !py-1 text-[10px] leading-none font-black min-w-[30px]"
                           >
                             X{months}
                           </Button>

@@ -70,6 +70,7 @@ input, select, textarea { color: #172033; }
 
 .premium-button {
   box-shadow: 0 10px 24px rgba(37, 99, 235, .14);
+  font-weight: 900;
 }
 
 
@@ -290,8 +291,10 @@ table tbody tr {
 
 [style*="fondo-saas.png"] {
   background-image:
-    linear-gradient(120deg, rgba(255,255,255,.88), rgba(239,246,255,.76), rgba(255,255,255,.90)),
+    linear-gradient(120deg, rgba(232,244,255,.94), rgba(219,234,254,.84), rgba(240,253,250,.92)),
     url('/fondo-saas.png') !important;
+  border-color: rgba(37, 99, 235, .24) !important;
+  box-shadow: 0 18px 45px rgba(37, 99, 235, .13), inset 0 1px 0 rgba(255,255,255,.82) !important;
 }
 
 .bg-gradient-to-br .bg-white\/8,
@@ -307,6 +310,62 @@ table tbody tr {
 .bg-gradient-to-r .bg-white\/18,
 .bg-gradient-to-r .bg-white\/20 {
   background-color: rgba(255, 255, 255, .18) !important;
+}
+
+.bg-gradient-to-br .bg-slate-950,
+.bg-gradient-to-br .bg-slate-950\/80,
+.bg-gradient-to-br .bg-slate-950\/70,
+.bg-gradient-to-br .bg-slate-950\/60,
+.bg-gradient-to-br .bg-slate-950\/50,
+.bg-gradient-to-br .bg-slate-950\/35,
+.bg-gradient-to-br .bg-slate-950\/30,
+.bg-gradient-to-br .bg-slate-950\/25,
+.bg-gradient-to-r .bg-slate-950,
+.bg-gradient-to-r .bg-slate-950\/80,
+.bg-gradient-to-r .bg-slate-950\/70,
+.bg-gradient-to-r .bg-slate-950\/60,
+.bg-gradient-to-r .bg-slate-950\/50,
+.bg-gradient-to-r .bg-slate-950\/35,
+.bg-gradient-to-r .bg-slate-950\/30,
+.bg-gradient-to-r .bg-slate-950\/25 {
+  background-color: rgba(255, 255, 255, .14) !important;
+  border-color: rgba(255, 255, 255, .28) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.18), 0 10px 26px rgba(15, 23, 42, .12) !important;
+}
+
+.bg-gradient-to-br .shadow-inner,
+.bg-gradient-to-r .shadow-inner {
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.18), 0 10px 26px rgba(15, 23, 42, .12) !important;
+}
+
+.from-sky-500 .bg-slate-950\/30,
+.from-sky-500 .bg-slate-950\/35,
+.from-sky-500 .bg-slate-950\/50,
+.from-sky-400 .bg-slate-950\/30,
+.from-sky-400 .bg-slate-950\/35,
+.from-sky-400 .bg-slate-950\/50 {
+  background-color: rgba(186, 230, 253, .22) !important;
+}
+
+.from-emerald-500 .bg-slate-950\/30,
+.from-emerald-500 .bg-slate-950\/35,
+.from-emerald-500 .bg-slate-950\/50,
+.from-emerald-400 .bg-slate-950\/30,
+.from-emerald-400 .bg-slate-950\/35,
+.from-emerald-400 .bg-slate-950\/50 {
+  background-color: rgba(167, 243, 208, .20) !important;
+}
+
+.from-violet-500 .bg-slate-950\/30,
+.from-violet-500 .bg-slate-950\/35,
+.from-violet-500 .bg-slate-950\/50 {
+  background-color: rgba(221, 214, 254, .20) !important;
+}
+
+.from-amber-400 .bg-slate-950\/30,
+.from-amber-400 .bg-slate-950\/35,
+.from-amber-400 .bg-slate-950\/50 {
+  background-color: rgba(254, 215, 170, .22) !important;
 }
 
 .bg-gradient-to-br .border-white\/10,
@@ -414,13 +473,50 @@ table tbody tr {
 [style*="fondo-saas.png"] .text-sky-300,
 [style*="fondo-saas.png"] .text-cyan-200,
 [style*="fondo-saas.png"] .text-cyan-300 {
-  color: #1d4ed8 !important;
+  color: #1e40af !important;
 }
 
 [style*="fondo-saas.png"] .text-white,
 [style*="fondo-saas.png"] .text-slate-100,
 [style*="fondo-saas.png"] .text-slate-200 {
   color: #172033 !important;
+}
+
+[style*="fondo-saas.png"] h1,
+[style*="fondo-saas.png"] h2 {
+  color: #1e3a8a !important;
+}
+
+.bg-red-400\/10 .bg-white\/10,
+.bg-red-400\/10 .bg-white\/15,
+.bg-red-500\/10 .bg-white\/10,
+.bg-red-500\/10 .bg-white\/15 {
+  background-color: var(--cr-red) !important;
+  border-color: var(--cr-red) !important;
+  color: #ffffff !important;
+}
+
+.bg-red-400\/10 .bg-white\/10 svg,
+.bg-red-400\/10 .bg-white\/15 svg,
+.bg-red-500\/10 .bg-white\/10 svg,
+.bg-red-500\/10 .bg-white\/15 svg {
+  color: #ffffff !important;
+}
+
+.bg-amber-400\/10 .bg-white\/10,
+.bg-amber-400\/10 .bg-white\/15,
+.bg-amber-500\/20 .bg-white\/10,
+.bg-amber-500\/20 .bg-white\/15 {
+  background-color: var(--cr-amber) !important;
+  border-color: var(--cr-amber) !important;
+  color: #ffffff !important;
+}
+
+.bg-amber-400\/10 .bg-white\/10 svg,
+.bg-amber-400\/10 .bg-white\/15 svg,
+.bg-amber-500\/20 .bg-white\/10 svg,
+.bg-amber-500\/20 .bg-white\/15 svg {
+  color: #ffffff !important;
 }
 
 .rounded-2xl.border.bg-blue-500\/10,
@@ -452,6 +548,28 @@ table tbody tr {
 .rounded-2xl.border.bg-red-400\/10 .text-red-200,
 .rounded-2xl.border.bg-red-400\/10 .text-red-300 {
   color: #b91c1c !important;
+}
+
+.premium-card .rounded-2xl.border,
+.premium-card .rounded-3xl.border,
+.premium-card .rounded-\[1\.5rem\].border,
+.premium-card .rounded-\[1\.75rem\].border {
+  border-color: rgba(148, 163, 184, .42) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.75), 0 8px 20px rgba(15, 23, 42, .055);
+}
+
+.premium-card .bg-slate-950,
+.premium-card .bg-slate-950\/70,
+.premium-card .bg-slate-950\/60,
+.premium-card .bg-slate-950\/50,
+.premium-card .bg-slate-950\/35,
+.premium-card .bg-slate-950\/30,
+.premium-card .bg-slate-950\/25 {
+  background-color: #f8fafc !important;
+}
+
+.premium-card .shadow-inner {
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.86), 0 10px 22px rgba(15, 23, 42, .055) !important;
 }
 
 .rounded-full.bg-blue-500\/10,
@@ -533,6 +651,20 @@ button.bg-red-500\/15,
 button.bg-red-500\/20 {
   background-color: var(--cr-red) !important;
   border-color: var(--cr-red) !important;
+  color: #ffffff !important;
+}
+
+button.bg-orange-500,
+button.hover\:bg-orange-500:hover {
+  background-color: #f97316 !important;
+  border-color: #f97316 !important;
+  color: #ffffff !important;
+}
+
+button.bg-amber-500,
+button.hover\:bg-amber-500:hover {
+  background-color: var(--cr-amber) !important;
+  border-color: var(--cr-amber) !important;
   color: #ffffff !important;
 }
 
