@@ -1735,10 +1735,10 @@ const statColorStyles = {
 };
 
 const rubroCardPalettes = [
-  { card: "border-sky-300/40 bg-gradient-to-br from-sky-500 via-blue-600 to-cyan-700 shadow-2xl shadow-sky-950/35", icon: "bg-white/20 text-white border-white/25", badge: "text-white" },
-  { card: "border-emerald-300/40 bg-gradient-to-br from-emerald-500 via-teal-600 to-green-700 shadow-2xl shadow-emerald-950/35", icon: "bg-white/20 text-white border-white/25", badge: "text-white" },
-  { card: "border-amber-300/40 bg-gradient-to-br from-amber-400 via-orange-500 to-rose-600 shadow-2xl shadow-orange-950/35", icon: "bg-white/20 text-white border-white/25", badge: "text-white" },
-  { card: "border-violet-300/40 bg-gradient-to-br from-violet-500 via-fuchsia-600 to-indigo-700 shadow-2xl shadow-violet-950/35", icon: "bg-white/20 text-white border-white/25", badge: "text-white" },
+  { card: "border-sky-300/40 bg-gradient-to-br from-sky-500 via-blue-600 to-cyan-700 shadow-2xl shadow-sky-950/35", icon: "bg-white/20 text-white border-white/25", badge: "text-white", chip: "bg-sky-700/70 border-sky-200/30 text-white" },
+  { card: "border-emerald-300/40 bg-gradient-to-br from-emerald-500 via-teal-600 to-green-700 shadow-2xl shadow-emerald-950/35", icon: "bg-white/20 text-white border-white/25", badge: "text-white", chip: "bg-emerald-700/70 border-emerald-200/30 text-white" },
+  { card: "border-amber-300/40 bg-gradient-to-br from-amber-400 via-orange-500 to-rose-600 shadow-2xl shadow-orange-950/35", icon: "bg-white/20 text-white border-white/25", badge: "text-white", chip: "bg-amber-700/70 border-amber-200/30 text-white" },
+  { card: "border-violet-300/40 bg-gradient-to-br from-violet-500 via-fuchsia-600 to-indigo-700 shadow-2xl shadow-violet-950/35", icon: "bg-white/20 text-white border-white/25", badge: "text-white", chip: "bg-violet-700/70 border-violet-200/30 text-white" },
 ];
 
 function EmprendimientosPage({ emprendimientos, search, setSearch, onNewBusiness }) {
@@ -1859,7 +1859,7 @@ function RubrosPage({ rubros }) {
 
               <div className="rounded-3xl border border-white/15 bg-slate-950/30 p-4 shadow-inner shadow-black/20 backdrop-blur-sm">
                 <p className="text-xs text-white/80 font-black uppercase tracking-wide mb-3">Actividades / subrubros</p>
-                <div className="flex flex-wrap gap-2">{(r.actividades || []).map((a) => <Badge key={a}>{a}</Badge>)}</div>
+                <div className="flex flex-wrap gap-2">{(r.actividades || []).map((a) => <span key={a} className={`rounded-full border px-3 py-1 text-xs font-bold ${palette.chip}`}>{a}</span>)}</div>
               </div>
 
               <div className="rounded-3xl border border-white/15 bg-slate-950/30 p-4 shadow-inner shadow-black/20 backdrop-blur-sm">
@@ -1869,7 +1869,7 @@ function RubrosPage({ rubros }) {
 
               <div className="rounded-3xl border border-white/15 bg-slate-950/30 p-4 shadow-inner shadow-black/20 backdrop-blur-sm">
                 <p className="text-xs text-white/80 font-black uppercase tracking-wide mb-3">Módulos sugeridos</p>
-                <div className="flex flex-wrap gap-2">{r.modulos.map((m) => <Badge key={m}>{m}</Badge>)}</div>
+                <div className="flex flex-wrap gap-2">{r.modulos.map((m) => <span key={m} className={`rounded-full border px-3 py-1 text-xs font-bold ${palette.chip}`}>{m}</span>)}</div>
               </div>
             </CardContent>
           </ColorCard>
@@ -1993,12 +1993,12 @@ function RubrosManagerPage({ rubros, modules, onChange }) {
 
                 <div className="rounded-3xl border border-white/15 bg-slate-950/30 p-4 shadow-inner shadow-black/20 backdrop-blur-sm">
                   <p className="text-xs text-white/80 font-black uppercase tracking-wide mb-3">Actividades / subrubros</p>
-                  <div className="flex flex-wrap gap-2">{(r.actividades || []).map((a) => <Badge key={a}>{a}</Badge>)}</div>
+                  <div className="flex flex-wrap gap-2">{(r.actividades || []).map((a) => <span key={a} className={`rounded-full border px-3 py-1 text-xs font-bold ${palette.chip}`}>{a}</span>)}</div>
                 </div>
 
                 <div className="rounded-3xl border border-white/15 bg-slate-950/30 p-4 shadow-inner shadow-black/20 backdrop-blur-sm">
                   <p className="text-xs text-white/80 font-black uppercase tracking-wide mb-3">Módulos sugeridos</p>
-                  <div className="flex flex-wrap gap-2">{(r.modulos || []).map((m) => <Badge key={m}>{m}</Badge>)}</div>
+                <div className="flex flex-wrap gap-2">{(r.modulos || []).map((m) => <span key={m} className={`rounded-full border px-3 py-1 text-xs font-bold ${palette.chip}`}>{m}</span>)}</div>
                 </div>
 
                 {isExpanded && (
@@ -5275,7 +5275,7 @@ function financePaymentTone(status) {
   return "danger";
 }
 
-function StatusBadge({ label, tone }) { const styles={success:"bg-emerald-400/15 text-emerald-300",danger:"bg-red-400/15 text-red-300",warning:"bg-blue-500/15 text-sky-300"}; return <span className={`px-3 py-1 rounded-full text-xs font-bold ${styles[tone]||styles.warning}`}>{label}</span> }
+function StatusBadge({ label, tone }) { const styles={success:"bg-emerald-600 text-white border border-emerald-700",danger:"bg-red-600 text-white border border-red-700",warning:"bg-blue-600 text-white border border-blue-700",info:"bg-violet-600 text-white border border-violet-700"}; return <span className={`px-3 py-1 rounded-full text-xs font-black ${styles[tone]||styles.warning}`}>{label}</span> }
 function ModalShell({ eyebrow, title, onClose, children }) { return <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"><div className="w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-3xl bg-slate-900 border border-blue-500/30 shadow-2xl shadow-blue-600/10"><div className="flex items-center justify-between p-5 border-b border-slate-800 sticky top-0 bg-slate-900 z-10"><div><p className="text-sm text-sky-300 font-bold uppercase tracking-wide">{eyebrow}</p><h2 className="text-2xl font-bold text-white">{title}</h2></div><Button onClick={onClose} className="bg-slate-800 text-white"><X className="w-4 h-4" /></Button></div>{children}</div></div> }
 function Button({ children, className="", ...props }) { return <button {...props} className={`premium-button inline-flex items-center justify-center rounded-2xl px-4 py-3 font-bold transition duration-200 hover:-translate-y-0.5 hover:opacity-95 active:translate-y-0 ${className}`}>{children}</button> }
 function parsePrice(value) {

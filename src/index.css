@@ -234,7 +234,20 @@ table tbody td .font-black {
 }
 
 table tbody tr {
-  border-color: rgba(148, 163, 184, .24) !important;
+  border-color: rgba(100, 116, 139, .30) !important;
+}
+
+table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+table tbody tr:nth-child(even) {
+  background-color: rgba(248, 250, 252, .78);
+}
+
+table tbody td {
+  border-bottom: 1px solid rgba(100, 116, 139, .20);
 }
 
 .fixed.bg-black\/70 {
@@ -470,6 +483,14 @@ table tbody tr {
   color: #172033 !important;
 }
 
+.bg-gradient-to-br input.text-2xl,
+.bg-gradient-to-r input.text-2xl {
+  background-color: #ffffff !important;
+  border-color: rgba(255, 255, 255, .78) !important;
+  color: #111827 !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.9), 0 10px 22px rgba(15, 23, 42, .12) !important;
+}
+
 [style*="fondo-saas.png"] .text-sky-300,
 [style*="fondo-saas.png"] .text-cyan-200,
 [style*="fondo-saas.png"] .text-cyan-300 {
@@ -554,8 +575,8 @@ table tbody tr {
 .premium-card .rounded-3xl.border,
 .premium-card .rounded-\[1\.5rem\].border,
 .premium-card .rounded-\[1\.75rem\].border {
-  border-color: rgba(148, 163, 184, .42) !important;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.75), 0 8px 20px rgba(15, 23, 42, .055);
+  border-color: rgba(100, 116, 139, .44) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.78), 0 10px 24px rgba(15, 23, 42, .07);
 }
 
 .premium-card .bg-slate-950,
@@ -570,6 +591,13 @@ table tbody tr {
 
 .premium-card .shadow-inner {
   box-shadow: inset 0 1px 0 rgba(255,255,255,.86), 0 10px 22px rgba(15, 23, 42, .055) !important;
+}
+
+.premium-card .border-blue-500\/20,
+.premium-card .border-emerald-400\/20,
+.premium-card .border-amber-400\/20,
+.premium-card .border-red-400\/20 {
+  border-width: 1.5px !important;
 }
 
 .rounded-full.bg-blue-500\/10,
