@@ -2317,6 +2317,12 @@ function ConfiguracionAdminPage({ commissionSettings, onUpdateCommissionSettings
     ["Cobro", "Manual por ahora. El registro se acumula para revisar al renovar el mes."],
     ["Aviso al usuario", "Cuando cambia la comision, el emprendedor ve un modal informativo al ingresar."],
   ];
+  const financeRules = [
+    ["Pagado", "Suma como ingreso confirmado y alimenta Dashboard/Finanzas."],
+    ["Pendiente", "No suma ingreso todavia, pero queda como cuenta por cobrar."],
+    ["Bonificado", "Habilita el plan sin sumar ingreso. Sirve para demos, acuerdos o casos especiales."],
+    ["Horas de trabajo", "Mas adelante se cargan manualmente para conocer costo interno y ganancia real."],
+  ];
 
   return (
     <div className="space-y-6">
@@ -2333,6 +2339,8 @@ function ConfiguracionAdminPage({ commissionSettings, onUpdateCommissionSettings
         <RulesCard title="Portal publico" icon={<Globe />} rows={portalRules} />
         <RulesCard title="Reglas comerciales" icon={<DollarSign />} rows={commercialRules} />
       </div>
+
+      <RulesCard title="Reglas financieras" icon={<CreditCard />} rows={financeRules} />
 
       <Card>
         <CardContent className="p-5 space-y-4">
@@ -3153,13 +3161,6 @@ function SuscripcionesPage({ emprendimientos, planes, historialComercial = [], c
 
   const getPlan = (name) => planes.find((p) => p.nombre === name) || planes[0];
 
-  useEffect(() => {
-    setLocalCommission({
-      porcentaje: commissionSettings.porcentaje,
-      limiteMensual: commissionSettings.limiteMensual,
-    });
-  }, [commissionSettings.porcentaje, commissionSettings.limiteMensual]);
-
   const rows = emprendimientos.map((e) => ({
     ...e,
     planData: getPlan(e.plan),
@@ -3310,7 +3311,7 @@ function SuscripcionesPage({ emprendimientos, planes, historialComercial = [], c
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
+      <div className="grid grid-cols-1 gap-5">
         <Card>
           <CardContent className="p-5">
             <h2 className="text-xl font-black text-white mb-2">Horas de trabajo C&R</h2>
@@ -3332,9 +3333,9 @@ function SuscripcionesPage({ emprendimientos, planes, historialComercial = [], c
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="hidden">
           <CardContent className="p-5">
-            <h2 className="text-xl font-black text-white mb-2">Regla financiera</h2>
+            <h2 className="hidden text-xl font-black text-white mb-2">Regla financiera</h2>
             <div className="space-y-3 text-sm text-slate-200">
               <ArchitectureRow icon={<CheckCircle2 />} title="Pagado" text="Suma como ingreso confirmado y alimenta Dashboard/Finanzas." />
               <ArchitectureRow icon={<CalendarClock />} title="Pendiente" text="No suma ingreso todavía, pero queda como cuenta por cobrar." />
