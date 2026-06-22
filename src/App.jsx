@@ -1139,11 +1139,11 @@ function App() {
           {isAdmin && activePage === "rubros" && <RubrosManagerPage rubros={rubros} modules={modulesBase} onChange={setRubros} />}
           {isAdmin && activePage === "modulos" && <ModulosPage modules={modulesBase} rubros={rubros} />}
           {isAdmin && activePage === "planes" && <PlanesPage planes={planes} />}
-          {isAdmin && activePage === "suscripciones" && <SuscripcionesPage emprendimientos={emprendimientos} planes={planes} historialComercial={historialComercial} commissionSettings={commissionSettings} onUpdateCommissionSettings={updateCommissionSettings} portalCommissions={portalCommissions} />}
+          {isAdmin && activePage === "suscripciones" && <SuscripcionesPage emprendimientos={emprendimientos} planes={planes} historialComercial={historialComercial} commissionSettings={commissionSettings} portalCommissions={portalCommissions} />}
           {isAdmin && activePage === "soporte" && <SoporteAdminPage emprendimientos={emprendimientos} setSelectedEmpId={setSelectedEmpId} setActivePage={setActivePage} />}
           {isAdmin && activePage === "mensajes" && <MensajesAdminPage mensajes={mensajes} emprendimientos={emprendimientos} onReply={replyMensaje} />}
           {isAdmin && activePage === "historial" && <HistorialAdminPage historial={historialAdmin} />}
-          {isAdmin && activePage === "configuracion-admin" && <ConfiguracionAdminPage commissionSettings={commissionSettings} />}
+          {isAdmin && activePage === "configuracion-admin" && <ConfiguracionAdminPage commissionSettings={commissionSettings} onUpdateCommissionSettings={updateCommissionSettings} />}
 
           {!isAdmin && isUserAccountBlocked && <BlockedAccountNotice emp={selectedEmp} />}
           {!isAdmin && !isUserAccountBlocked && activePage === "mi-panel" && <ClienteDashboard emp={selectedEmp} setActivePage={setActivePage} />}
@@ -2277,7 +2277,26 @@ function HistorialAdminPage({ historial }) {
   );
 }
 
-function ConfiguracionAdminPage({ commissionSettings }) {
+function ConfiguracionAdminPage({ commissionSettings, onUpdateCommissionSettings }) {
+  const [localCommission, setLocalCommission] = useState({
+    porcentaje: commissionSettings.porcentaje,
+    limiteMensual: commissionSettings.limiteMensual,
+  });
+
+  useEffect(() => {
+    setLocalCommission({
+      porcentaje: commissionSettings.porcentaje,
+      limiteMensual: commissionSettings.limiteMensual,
+    });
+  }, [commissionSettings.porcentaje, commissionSettings.limiteMensual]);
+
+  function saveCommissionSettings() {
+    onUpdateCommissionSettings({
+      porcentaje: Number(localCommission.porcentaje || 0),
+      limiteMensual: Number(localCommission.limiteMensual || 0),
+    });
+  }
+
   const accountRules = [
     ["Activo", "Puede entrar, editar, publicar y mostrar portal."],
     ["Suspendido", "Puede iniciar sesion, ve aviso, no puede modificar y el portal queda oculto."],
@@ -2314,6 +2333,21 @@ function ConfiguracionAdminPage({ commissionSettings }) {
         <RulesCard title="Portal publico" icon={<Globe />} rows={portalRules} />
         <RulesCard title="Reglas comerciales" icon={<DollarSign />} rows={commercialRules} />
       </div>
+
+      <Card>
+        <CardContent className="p-5 space-y-4">
+          <div>
+            <h2 className="text-xl font-black text-white">Comision del portal</h2>
+            <p className="text-sm text-slate-300 mt-1">Esta regla impacta en el calculo de ventas por portal y avisa al emprendedor al ingresar.</p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <InputField icon={<DollarSign />} label="Porcentaje de comision" type="number" min="0" step="0.1" value={localCommission.porcentaje} onChange={(e) => setLocalCommission({ ...localCommission, porcentaje: e.target.value })} />
+            <InputField icon={<ShieldCheck />} label="Limite mensual por emprendimiento" type="number" min="0" value={localCommission.limiteMensual} onChange={(e) => setLocalCommission({ ...localCommission, limiteMensual: e.target.value })} />
+          </div>
+          <Button type="button" onClick={saveCommissionSettings} className="bg-blue-500 text-black">Actualizar comision</Button>
+          <p className="text-xs text-slate-400">Al actualizar, cada emprendedor vera un aviso al entrar hasta marcarlo como entendido.</p>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardContent className="p-5">
@@ -3110,11 +3144,7 @@ function PlanDetailList({ title, items, icon }) {
   );
 }
 
-function SuscripcionesPage({ emprendimientos, planes, historialComercial = [], commissionSettings, onUpdateCommissionSettings, portalCommissions = [] }) {
-  const [localCommission, setLocalCommission] = useState({
-    porcentaje: commissionSettings.porcentaje,
-    limiteMensual: commissionSettings.limiteMensual,
-  });
+function SuscripcionesPage({ emprendimientos, planes, historialComercial = [], commissionSettings, portalCommissions = [] }) {
   const horasTrabajo = [
     { fecha: "18/06/2026", tarea: "Ajustes visuales del panel admin", horas: 2.5, valorHora: 4500, responsable: "C&R" },
     { fecha: "18/06/2026", tarea: "Configuración y soporte de deploy", horas: 1.5, valorHora: 4500, responsable: "C&R + IA" },
@@ -3146,13 +3176,6 @@ function SuscripcionesPage({ emprendimientos, planes, historialComercial = [], c
   const totalVentasPortal = portalCommissions.reduce((acc, item) => acc + Number(item.venta || 0), 0);
   const totalComisionesPortal = portalCommissions.reduce((acc, item) => acc + Number(item.comision || 0), 0);
 
-  function saveCommissionSettings() {
-    onUpdateCommissionSettings({
-      porcentaje: Number(localCommission.porcentaje || 0),
-      limiteMensual: Number(localCommission.limiteMensual || 0),
-    });
-  }
-
   return (
     <div className="space-y-6">
       <PageHeader title="Finanzas" subtitle="Control interno de ingresos por planes, pagos pendientes, bonificados y horas de trabajo de C&R." />
@@ -3174,13 +3197,12 @@ function SuscripcionesPage({ emprendimientos, planes, historialComercial = [], c
         <Card>
           <CardContent className="p-5 space-y-4">
             <div>
-              <h2 className="text-xl font-black text-white">Comisión del portal</h2>
-              <p className="text-sm text-slate-300 mt-1">Configuración manual visible para emprendedores.</p>
+              <h2 className="text-xl font-black text-white">Comision vigente</h2>
+              <p className="text-sm text-slate-300 mt-1">La configuracion se modifica desde Configuracion.</p>
             </div>
-            <InputField icon={<DollarSign />} label="Porcentaje de comisión" type="number" min="0" step="0.1" value={localCommission.porcentaje} onChange={(e) => setLocalCommission({ ...localCommission, porcentaje: e.target.value })} />
-            <InputField icon={<ShieldCheck />} label="Límite mensual por emprendimiento" type="number" min="0" value={localCommission.limiteMensual} onChange={(e) => setLocalCommission({ ...localCommission, limiteMensual: e.target.value })} />
-            <Button type="button" onClick={saveCommissionSettings} className="w-full bg-blue-500 text-black">Actualizar comisión</Button>
-            <p className="text-xs text-slate-400">Al actualizar, el emprendedor verá un aviso al entrar.</p>
+            <InfoItem label="Porcentaje" value={`${commissionSettings.porcentaje}%`} highlight />
+            <InfoItem label="Limite mensual" value={money(commissionSettings.limiteMensual)} />
+            <p className="text-xs text-slate-400">Este bloque queda aca solo como referencia financiera.</p>
           </CardContent>
         </Card>
 
