@@ -1,0 +1,575 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Estado actual - C&R Emprende</title>
+    <style>
+      :root {
+        --ink: #172033;
+        --muted: #5c667a;
+        --line: #dbe1ea;
+        --soft: #f5f7fb;
+        --brand: #1b6b7f;
+        --brand-2: #f0a23a;
+        --ok: #217a55;
+        --warn: #9a6517;
+        --danger: #9f3a3a;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        color: var(--ink);
+        background: #eef2f7;
+        font-family: Arial, Helvetica, sans-serif;
+        line-height: 1.45;
+      }
+
+      .page {
+        width: min(1080px, calc(100% - 32px));
+        margin: 32px auto;
+        background: #fff;
+        border: 1px solid var(--line);
+        box-shadow: 0 18px 55px rgba(23, 32, 51, 0.12);
+      }
+
+      header {
+        padding: 34px 42px 28px;
+        border-bottom: 4px solid var(--brand);
+        background:
+          linear-gradient(135deg, rgba(27, 107, 127, 0.12), rgba(240, 162, 58, 0.1)),
+          #fff;
+      }
+
+      .brand-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 24px;
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+      }
+
+      .mark {
+        width: 68px;
+        height: 68px;
+        border-radius: 18px;
+        display: grid;
+        place-items: center;
+        background: var(--ink);
+        color: #fff;
+        font-weight: 800;
+        letter-spacing: 0.5px;
+      }
+
+      .brand h1 {
+        margin: 0;
+        font-size: 30px;
+        line-height: 1.1;
+      }
+
+      .brand p {
+        margin: 6px 0 0;
+        color: var(--muted);
+        font-size: 15px;
+      }
+
+      .meta {
+        text-align: right;
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      main {
+        padding: 34px 42px 42px;
+      }
+
+      section {
+        margin-top: 30px;
+      }
+
+      section:first-child {
+        margin-top: 0;
+      }
+
+      h2 {
+        margin: 0 0 14px;
+        font-size: 20px;
+        border-bottom: 1px solid var(--line);
+        padding-bottom: 8px;
+      }
+
+      h3 {
+        margin: 18px 0 8px;
+        font-size: 15px;
+      }
+
+      p {
+        margin: 0 0 12px;
+      }
+
+      ul {
+        margin: 8px 0 0 20px;
+        padding: 0;
+      }
+
+      li {
+        margin: 6px 0;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 14px;
+      }
+
+      .card {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 16px;
+        background: #fff;
+      }
+
+      .card strong {
+        display: block;
+        margin-bottom: 6px;
+      }
+
+      .tag-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 12px;
+      }
+
+      .tag {
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        padding: 5px 10px;
+        font-size: 12px;
+        color: var(--muted);
+        background: var(--soft);
+      }
+
+      .summary {
+        border-left: 5px solid var(--brand);
+        background: var(--soft);
+        padding: 16px 18px;
+        border-radius: 8px;
+      }
+
+      .status {
+        display: inline-block;
+        border-radius: 6px;
+        padding: 3px 8px;
+        font-size: 12px;
+        font-weight: 700;
+        color: #fff;
+      }
+
+      .ok {
+        background: var(--ok);
+      }
+
+      .warn {
+        background: var(--warn);
+      }
+
+      .danger {
+        background: var(--danger);
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 10px;
+        font-size: 14px;
+      }
+
+      th,
+      td {
+        border: 1px solid var(--line);
+        padding: 10px;
+        text-align: left;
+        vertical-align: top;
+      }
+
+      th {
+        background: var(--soft);
+      }
+
+      .note {
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .print-box {
+        border: 1px dashed var(--brand);
+        background: rgba(27, 107, 127, 0.06);
+        border-radius: 8px;
+        padding: 14px 16px;
+      }
+
+      footer {
+        padding: 20px 42px 28px;
+        color: var(--muted);
+        border-top: 1px solid var(--line);
+        font-size: 12px;
+      }
+
+      @media (max-width: 760px) {
+        .page {
+          width: 100%;
+          margin: 0;
+          border: 0;
+        }
+
+        header,
+        main,
+        footer {
+          padding-left: 22px;
+          padding-right: 22px;
+        }
+
+        .brand-row,
+        .brand {
+          align-items: flex-start;
+        }
+
+        .brand-row {
+          flex-direction: column;
+        }
+
+        .meta {
+          text-align: left;
+        }
+
+        .grid {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      @media print {
+        body {
+          background: #fff;
+        }
+
+        .page {
+          width: 100%;
+          margin: 0;
+          border: 0;
+          box-shadow: none;
+        }
+
+        header,
+        main,
+        footer {
+          padding-left: 22mm;
+          padding-right: 22mm;
+        }
+
+        section {
+          break-inside: avoid;
+        }
+
+        .card,
+        .summary,
+        .print-box {
+          break-inside: avoid;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <article class="page">
+      <header>
+        <div class="brand-row">
+          <div class="brand">
+            <div class="mark">C&amp;R</div>
+            <div>
+              <h1>Estado actual de C&amp;R Emprende</h1>
+              <p>Tu logo, tu negocio, tu control.</p>
+            </div>
+          </div>
+          <div class="meta">
+            <strong>Resumen funcional</strong><br />
+            Fecha: 21 de junio de 2026<br />
+            Proyecto: Multi-SaaS Polirubro
+          </div>
+        </div>
+      </header>
+
+      <main>
+        <section>
+          <div class="summary">
+            <strong>Resumen general</strong>
+            <p>
+              La plataforma ya cuenta con flujo de administrador, usuarios reales,
+              demos por tiempo, panel comercial, rubros editables, finanzas,
+              historial de alertas, exhibición pública por emprendimiento,
+              consultas desde portal y registro manual de ventas con comisión.
+            </p>
+            <div class="tag-row">
+              <span class="tag">React + Vite</span>
+              <span class="tag">LocalStorage</span>
+              <span class="tag">Panel admin</span>
+              <span class="tag">Portal público</span>
+              <span class="tag">Comisiones manuales</span>
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <h2>Base del proyecto</h2>
+          <div class="grid">
+            <div class="card">
+              <strong>Aplicación</strong>
+              El proyecto funciona como una aplicación React con Vite. El archivo
+              principal de comportamiento está en <code>src/App.jsx</code> y los
+              estilos generales en <code>src/index.css</code>.
+            </div>
+            <div class="card">
+              <strong>Persistencia actual</strong>
+              La información se guarda en <code>localStorage</code>. Esto sirve para
+              prototipo y prueba local. Para producción real conviene pasar a base
+              de datos, autenticación y almacenamiento de imágenes.
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <h2>Login y acceso</h2>
+          <ul>
+            <li>El administrador usa el correo reservado <code>admin@cremprende.com</code>.</li>
+            <li>Los usuarios creados ingresan con correo <code>@cremprende.com</code> y contraseña temporal.</li>
+            <li>Los usuarios demo tienen duración por minutos u horas: 5 minutos, 1 hora, 5 horas, 12 horas o 24 horas.</li>
+            <li>El sistema muestra un reloj de cuenta regresiva durante la demo.</li>
+            <li>Cuando vence la demo, se cierra la sesión y aparece un mensaje final con acciones de WhatsApp y cierre.</li>
+          </ul>
+        </section>
+
+        <section>
+          <h2>Panel administrador</h2>
+          <div class="grid">
+            <div class="card">
+              <strong>Dashboard</strong>
+              Incluye tarjetas de resumen, estados de usuarios, gráfico de usuarios
+              por rubro y alertas comerciales útiles.
+            </div>
+            <div class="card">
+              <strong>Alertas</strong>
+              Las alertas priorizan pendientes de pago y usuarios sin emprendimiento
+              creado. Las acciones se registran en historial comercial/financiero.
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <h2>Usuarios</h2>
+          <ul>
+            <li>Se pueden crear usuarios normales y usuarios demo.</li>
+            <li>El correo se genera con el nombre y dominio <code>@cremprende.com</code>.</li>
+            <li>Se puede definir contraseña temporal, rubro, plan, estado de pago y duración de demo.</li>
+            <li>El usuario creado ya puede ingresar con sus datos reales.</li>
+          </ul>
+        </section>
+
+        <section>
+          <h2>Emprendimientos</h2>
+          <ul>
+            <li>Se quitaron accesos directos del administrador al panel del usuario.</li>
+            <li>El ingreso al panel del emprendedor queda sujeto a permiso del usuario.</li>
+            <li>El buscador permite localizar por nombre, usuario/responsable y rubro.</li>
+            <li>Se ajustó la terminología para evitar usar "dueño" como etiqueta principal.</li>
+          </ul>
+        </section>
+
+        <section>
+          <h2>Rubros</h2>
+          <div class="grid">
+            <div class="card">
+              <strong>Gestión editable</strong>
+              Cada rubro puede editar nombre, enfoque, etiqueta, ejemplos,
+              actividades y módulos asociados.
+            </div>
+            <div class="card">
+              <strong>Expansión visual</strong>
+              Al seleccionar un rubro, se expande en el centro ocupando el espacio
+              principal. Al volver a seleccionarlo, regresa a su tamaño normal.
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <h2>Finanzas</h2>
+          <ul>
+            <li>Se mantiene el registro de ingresos y horas.</li>
+            <li>Se agregó historial de seguimiento comercial.</li>
+            <li>Se registran acciones provenientes de alertas.</li>
+            <li>Se incorporó configuración de comisión del portal por emprendimiento.</li>
+            <li>La comisión contempla porcentaje y tope mensual manual.</li>
+          </ul>
+        </section>
+
+        <section>
+          <h2>Exhibición y portal público</h2>
+          <div class="grid">
+            <div class="card">
+              <strong>Módulo Exhibición</strong>
+              El usuario puede crear publicaciones con título, descripción,
+              precio opcional, imagen por URL o archivo local, y estado visible.
+            </div>
+            <div class="card">
+              <strong>Portal público</strong>
+              Cada emprendimiento tiene un link público para compartir por WhatsApp,
+              estados o redes. El visitante puede ver productos y enviar consultas.
+            </div>
+            <div class="card">
+              <strong>Personalización</strong>
+              El usuario puede editar descripción del portal, color principal y
+              usar identidad visual del emprendimiento junto al logo de Emprende.
+            </div>
+            <div class="card">
+              <strong>Consultas</strong>
+              El visitante deja nombre, WhatsApp y mensaje. La consulta queda
+              registrada para que el emprendedor pueda responder y gestionarla.
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <h2>Clientes y oportunidades</h2>
+          <ul>
+            <li>Una consulta del portal puede pasar a estado potencial.</li>
+            <li>Los potenciales del portal se reflejan en el módulo de clientes.</li>
+            <li>Cuando la venta se concreta, el usuario carga el monto vendido.</li>
+            <li>El sistema calcula la comisión según el porcentaje y el tope mensual configurados.</li>
+          </ul>
+        </section>
+
+        <section>
+          <h2>Comisiones del portal</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Elemento</th>
+                <th>Funcionamiento actual</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Porcentaje</td>
+                <td>Lo define el administrador desde Finanzas.</td>
+              </tr>
+              <tr>
+                <td>Tope mensual</td>
+                <td>Limita la comisión máxima que se cobra en el mes por emprendimiento.</td>
+              </tr>
+              <tr>
+                <td>Registro</td>
+                <td>La venta queda registrada en finanzas y visible para seguimiento.</td>
+              </tr>
+              <tr>
+                <td>Aviso al usuario</td>
+                <td>Si cambia la configuración de comisión, el usuario ve un aviso al ingresar y puede marcarlo como entendido.</td>
+              </tr>
+              <tr>
+                <td>Pago</td>
+                <td>Por ahora queda manual. No hay integración automática con Mercado Pago, Stripe ni transferencia bancaria.</td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+
+        <section>
+          <h2>Estados principales</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Área</th>
+                <th>Estado</th>
+                <th>Nota</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Login y demos</td>
+                <td><span class="status ok">Listo</span></td>
+                <td>Ingreso real, demo por tiempo, reloj y cierre por vencimiento.</td>
+              </tr>
+              <tr>
+                <td>Usuarios</td>
+                <td><span class="status ok">Listo</span></td>
+                <td>Creación normal/demo y acceso con usuario creado.</td>
+              </tr>
+              <tr>
+                <td>Rubros</td>
+                <td><span class="status ok">Listo</span></td>
+                <td>Alta, edición y expansión visual.</td>
+              </tr>
+              <tr>
+                <td>Portal público</td>
+                <td><span class="status ok">Listo base</span></td>
+                <td>Publicaciones, consultas y link compartible.</td>
+              </tr>
+              <tr>
+                <td>Comisiones</td>
+                <td><span class="status ok">Listo manual</span></td>
+                <td>Registro, porcentaje, tope mensual y aviso al usuario.</td>
+              </tr>
+              <tr>
+                <td>Producción real</td>
+                <td><span class="status warn">Pendiente</span></td>
+                <td>Falta base de datos, auth real, storage de imágenes y despliegue definitivo.</td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+
+        <section>
+          <h2>Pendientes recomendados</h2>
+          <ul>
+            <li>Migrar datos de <code>localStorage</code> a una base de datos real.</li>
+            <li>Agregar autenticación segura para administrador y usuarios.</li>
+            <li>Guardar imágenes del portal en storage real.</li>
+            <li>Definir política comercial final de comisiones y topes.</li>
+            <li>Agregar exportes o reportes mensuales para finanzas.</li>
+            <li>Preparar dominio y publicación web definitiva.</li>
+          </ul>
+        </section>
+
+        <section>
+          <h2>Cómo bajar este documento en PDF</h2>
+          <div class="print-box">
+            <p>
+              Abrir este archivo HTML en el navegador, presionar
+              <strong>Ctrl + P</strong>, elegir <strong>Guardar como PDF</strong> y
+              confirmar. El diseño está preparado para impresión en hoja A4.
+            </p>
+          </div>
+        </section>
+
+        <section>
+          <h2>Verificación técnica</h2>
+          <p class="note">
+            La última verificación funcional importante se hizo con build de Vite.
+            Para validar nuevamente el proyecto completo, ejecutar
+            <code>npm.cmd run build</code> desde la carpeta del proyecto.
+          </p>
+        </section>
+      </main>
+
+      <footer>
+        Documento interno de seguimiento. C&amp;R Emprende - Multi-SaaS Polirubro.
+      </footer>
+    </article>
+  </body>
+</html>
