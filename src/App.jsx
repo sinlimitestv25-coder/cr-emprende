@@ -335,6 +335,10 @@ const PORTAL_IMAGE_MAX_UPLOAD_BYTES = 2 * 1024 * 1024;
 const PORTAL_IMAGE_TARGET_BYTES = 600 * 1024;
 const PORTAL_IMAGE_MAX_DIMENSION = 1400;
 const PORTAL_PUBLICATION_LIMIT = 20;
+const PORTAL_LOGO_MAX_UPLOAD_BYTES = 1 * 1024 * 1024;
+const PORTAL_LOGO_TARGET_BYTES = 300 * 1024;
+const PORTAL_BANNER_MAX_UPLOAD_BYTES = 2 * 1024 * 1024;
+const PORTAL_BANNER_TARGET_BYTES = 700 * 1024;
 
 function loadStoredValue(key, fallback) {
   if (typeof window === "undefined") return fallback;
@@ -433,14 +437,17 @@ function canvasToBlob(canvas, type, quality) {
   });
 }
 
-async function compressPortalImage(file) {
+async function compressImageFile(file, options = {}) {
   if (!file) return null;
-  if (file.size > PORTAL_IMAGE_MAX_UPLOAD_BYTES) {
-    throw new Error(`La imagen supera el limite de ${formatBytes(PORTAL_IMAGE_MAX_UPLOAD_BYTES)}.`);
+  const maxUploadBytes = options.maxUploadBytes || PORTAL_IMAGE_MAX_UPLOAD_BYTES;
+  const targetBytes = options.targetBytes || PORTAL_IMAGE_TARGET_BYTES;
+  const maxDimension = options.maxDimension || PORTAL_IMAGE_MAX_DIMENSION;
+  if (file.size > maxUploadBytes) {
+    throw new Error(`La imagen supera el limite de ${formatBytes(maxUploadBytes)}.`);
   }
 
   const image = await loadImageFromFile(file);
-  const scale = Math.min(1, PORTAL_IMAGE_MAX_DIMENSION / Math.max(image.width, image.height));
+  const scale = Math.min(1, maxDimension / Math.max(image.width, image.height));
   const width = Math.max(1, Math.round(image.width * scale));
   const height = Math.max(1, Math.round(image.height * scale));
   const canvas = document.createElement("canvas");
@@ -451,7 +458,7 @@ async function compressPortalImage(file) {
 
   let quality = 0.82;
   let blob = await canvasToBlob(canvas, "image/webp", quality);
-  while (blob.size > PORTAL_IMAGE_TARGET_BYTES && quality > 0.45) {
+  while (blob.size > targetBytes && quality > 0.45) {
     quality -= 0.08;
     blob = await canvasToBlob(canvas, "image/webp", quality);
   }
@@ -464,6 +471,30 @@ async function compressPortalImage(file) {
     width,
     height,
   };
+}
+
+async function compressPortalImage(file) {
+  return compressImageFile(file, {
+    maxUploadBytes: PORTAL_IMAGE_MAX_UPLOAD_BYTES,
+    targetBytes: PORTAL_IMAGE_TARGET_BYTES,
+    maxDimension: PORTAL_IMAGE_MAX_DIMENSION,
+  });
+}
+
+async function compressPortalLogo(file) {
+  return compressImageFile(file, {
+    maxUploadBytes: PORTAL_LOGO_MAX_UPLOAD_BYTES,
+    targetBytes: PORTAL_LOGO_TARGET_BYTES,
+    maxDimension: 900,
+  });
+}
+
+async function compressPortalBanner(file) {
+  return compressImageFile(file, {
+    maxUploadBytes: PORTAL_BANNER_MAX_UPLOAD_BYTES,
+    targetBytes: PORTAL_BANNER_TARGET_BYTES,
+    maxDimension: 1800,
+  });
 }
 
 const defaultCommissionSettings = {
@@ -1051,7 +1082,7 @@ function App() {
 }
 
 function SidebarBrand({ isAdmin, emp }) {
-  const isImageLogo = !isAdmin && emp?.logo && (emp.logo.startsWith("http") || emp.logo.startsWith("/"));
+  const isImageLogo = !isAdmin && emp?.logo && (emp.logo.startsWith("http") || emp.logo.startsWith("/") || emp.logo.startsWith("data:"));
 
   if (isAdmin) {
     return (
@@ -1205,12 +1236,55 @@ function PortalPublico({ emp, publicaciones, config, cacheInfo, onConsulta, onVi
     if (emp?.id) onView(emp.id);
   }, [emp?.id]);
 
+  useEffect(() => {
+    if (!emp) return;
+    document.title = `${emp.nombre} | Portal C&R Emprende`;
+    const description = config?.descripcion || getDefaultPortalConfig(emp).descripcion;
+    const image = emp.logo?.startsWith("data:") || emp.logo?.startsWith("http") || emp.logo?.startsWith("/") ? emp.logo : "/logo-cr.png";
+    [
+      ["property", "og:title", emp.nombre],
+      ["property", "og:description", description],
+      ["property", "og:image", image],
+      ["name", "description", description],
+    ].forEach(([attr, key, content]) => {
+      let meta = document.head.querySelector(`meta[${attr}="${key}"]`);
+      if (!meta) {
+        meta = document.createElement("meta");
+        meta.setAttribute(attr, key);
+        document.head.appendChild(meta);
+      }
+      meta.setAttribute("content", content);
+    });
+  }, [emp, config]);
+
   if (!emp) {
     return (
       <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center p-6">
         <div className="max-w-md rounded-3xl border border-red-400/20 bg-red-400/10 p-6 text-center">
           <h1 className="text-2xl font-black">Portal no encontrado</h1>
           <p className="text-slate-200 mt-2">El link no corresponde a un emprendimiento activo.</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (emp.estado === "Eliminado") {
+    return (
+      <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center p-6">
+        <div className="max-w-md rounded-3xl border border-red-400/20 bg-red-400/10 p-6 text-center">
+          <h1 className="text-2xl font-black">Portal no disponible</h1>
+          <p className="text-slate-200 mt-2">Este portal ya no se encuentra activo.</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (emp.estado === "Suspendido") {
+    return (
+      <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center p-6">
+        <div className="max-w-xl rounded-3xl border border-amber-400/20 bg-amber-400/10 p-6 text-center">
+          <h1 className="text-2xl font-black">Portal suspendido temporalmente</h1>
+          <p className="text-slate-200 mt-2">El emprendimiento conserva sus datos por 90 dias, pero el portal publico queda oculto hasta regularizar la cuenta.</p>
         </div>
       </div>
     );
@@ -1240,25 +1314,25 @@ function PortalPublico({ emp, publicaciones, config, cacheInfo, onConsulta, onVi
 
   return (
     <div className="min-h-screen bg-slate-950 text-white">
-      <section className="relative min-h-[320px] overflow-hidden border-b border-white/10 px-5 py-5 md:px-10 md:py-8" style={{ backgroundImage: `linear-gradient(90deg, rgba(2,6,23,.90), ${theme.overlay}), url('/fondo-saas.png')`, backgroundSize: "cover", backgroundPosition: "center" }}>
+      <section className="relative min-h-[230px] overflow-hidden border-b border-white/10 px-5 py-4 md:px-10 md:py-6" style={{ backgroundImage: `linear-gradient(90deg, rgba(2,6,23,.88), ${theme.overlay}), url('${config?.bannerImage || "/fondo-saas.png"}')`, backgroundSize: "cover", backgroundPosition: "center" }}>
         <div className="w-full">
           <div className="mb-6 flex items-center justify-between gap-4">
             <div className="inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-white/10 px-3 py-2">
               <img src="/logo-cr.png" alt="C&R Emprende" className="h-12 w-auto rounded bg-white/90 px-2" />
               <span className="text-xs font-black uppercase tracking-[0.18em] text-sky-200">Emprende</span>
             </div>
-            <div className="flex h-40 w-40 md:h-56 md:w-56 lg:h-72 lg:w-72 items-center justify-center overflow-hidden rounded-[2.25rem] border border-white/15 bg-white/12 text-5xl md:text-6xl lg:text-7xl font-black text-white">
-              {emp.logo?.startsWith("/") || emp.logo?.startsWith("http") ? <img src={emp.logo} alt={emp.nombre} className="h-full w-full object-cover" /> : emp.logo || emp.nombre.slice(0, 2)}
+            <div className="flex h-32 w-32 md:h-44 md:w-44 items-center justify-center overflow-hidden rounded-[2rem] border border-white/15 bg-white/12 text-4xl md:text-5xl font-black text-white">
+              {emp.logo?.startsWith("/") || emp.logo?.startsWith("http") || emp.logo?.startsWith("data:") ? <img src={emp.logo} alt={emp.nombre} className="h-full w-full object-cover" /> : emp.logo || emp.nombre.slice(0, 2)}
             </div>
           </div>
-          <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
-            <div>
+          <div className="flex flex-col md:flex-row md:items-end md:justify-center gap-6 text-center">
+            <div className="mx-auto">
               <p className="text-xs font-black uppercase tracking-[0.24em] text-sky-300">Portal de exhibición</p>
               <h1 className="mt-2 text-4xl md:text-6xl font-black text-white">{emp.nombre}</h1>
               <p className="mt-3 max-w-3xl text-base md:text-lg font-semibold text-slate-100">{config?.descripcion || getDefaultPortalConfig(emp).descripcion}</p>
               <p className="mt-2 text-sm text-slate-400">{emp.rubro} · {emp.actividad}</p>
             </div>
-            <div className="rounded-3xl border border-white/10 bg-white/10 p-5 text-base text-slate-100 min-w-[220px]">
+            <div className="rounded-3xl border border-white/10 bg-white/10 p-4 text-sm text-slate-100 md:absolute md:bottom-6 md:left-10 min-w-[210px] text-left">
               <p className="font-black text-white">Contacto</p>
               <p className="mt-1">{emp.whatsapp || "WhatsApp pendiente"}</p>
               <p>{emp.instagram || ""}</p>
@@ -3629,6 +3703,9 @@ function ClienteExhibicion({ emp, publicaciones, consultas, portalConfig, portal
   const [imageProcessing, setImageProcessing] = useState(false);
   const [imageMessage, setImageMessage] = useState("");
   const [imageError, setImageError] = useState("");
+  const [bannerProcessing, setBannerProcessing] = useState(false);
+  const [bannerMessage, setBannerMessage] = useState("");
+  const [bannerError, setBannerError] = useState("");
   const [saleModal, setSaleModal] = useState(null);
   const [saleAmount, setSaleAmount] = useState("");
   const portalUrl = typeof window !== "undefined" ? `${window.location.origin}${window.location.pathname}?portal=${encodeURIComponent(emp.id)}` : `?portal=${emp.id}`;
@@ -3668,6 +3745,30 @@ function ClienteExhibicion({ emp, publicaciones, consultas, portalConfig, portal
       setImageError(error?.message || "No se pudo procesar la imagen.");
     } finally {
       setImageProcessing(false);
+    }
+  }
+
+  async function handleBannerFile(file) {
+    if (!file) return;
+    setBannerError("");
+    setBannerMessage("");
+    setBannerProcessing(true);
+    try {
+      const optimized = await compressPortalBanner(file);
+      onUpdatePortalConfig(emp.id, {
+        bannerImage: optimized.dataUrl,
+        bannerMeta: {
+          originalBytes: optimized.originalBytes,
+          finalBytes: optimized.finalBytes,
+          width: optimized.width,
+          height: optimized.height,
+        },
+      });
+      setBannerMessage(`Banner optimizado: ${formatBytes(optimized.originalBytes)} -> ${formatBytes(optimized.finalBytes)}.`);
+    } catch (error) {
+      setBannerError(error?.message || "No se pudo procesar el banner.");
+    } finally {
+      setBannerProcessing(false);
     }
   }
 
@@ -3767,6 +3868,15 @@ function ClienteExhibicion({ emp, publicaciones, consultas, portalConfig, portal
               <textarea value={portalConfig.descripcion} onChange={(e) => onUpdatePortalConfig(emp.id, { descripcion: e.target.value })} className="w-full min-h-[100px] rounded-2xl bg-slate-950/70 border border-white/10 px-4 py-3 text-white outline-none focus:border-sky-400" />
             </div>
             <SelectField label="Color del portal" value={portalConfig.color} onChange={(e) => onUpdatePortalConfig(emp.id, { color: e.target.value })} options={["cyan", "violet", "emerald", "amber", "rose"]} labels={{ cyan: "Cyan / azul", violet: "Violeta", emerald: "Verde", amber: "Dorado", rose: "Rosa" }} />
+            <div className="rounded-2xl border border-slate-300 bg-slate-50 p-4">
+              <label className="text-sm font-bold text-slate-700 mb-2 block">Banner del portal</label>
+              <input type="file" accept="image/*" onChange={(e) => handleBannerFile(e.target.files?.[0])} className="w-full rounded-xl bg-white border border-slate-300 px-3 py-3 text-slate-900" />
+              <p className="mt-2 text-xs text-slate-500">Maximo permitido: {formatBytes(PORTAL_BANNER_MAX_UPLOAD_BYTES)}. Se comprime automaticamente antes de guardar.</p>
+              {bannerProcessing && <p className="mt-2 text-xs font-bold text-sky-700">Optimizando banner...</p>}
+              {bannerMessage && <p className="mt-2 text-xs font-bold text-emerald-700">{bannerMessage}</p>}
+              {bannerError && <p className="mt-2 text-xs font-bold text-red-600">{bannerError}</p>}
+              {portalConfig.bannerImage && <Button type="button" onClick={() => onUpdatePortalConfig(emp.id, { bannerImage: "", bannerMeta: null })} className="mt-3 bg-slate-800 text-white px-3 py-2 text-xs">Quitar banner</Button>}
+            </div>
           </CardContent>
         </Card>
         <Card>
@@ -4722,8 +4832,35 @@ function ClienteFinanzas({ emp }) {
 
 function ClienteConfiguracion({ emp, updateEmp, plan }) {
   const [local, setLocal] = useState({ ...emp, apariencia: emp.apariencia || "claro", paleta: emp.paleta || "vivos" });
+  const [logoProcessing, setLogoProcessing] = useState(false);
+  const [logoMessage, setLogoMessage] = useState("");
+  const [logoError, setLogoError] = useState("");
   function change(field, value) { setLocal((prev) => ({ ...prev, [field]: value })); }
   function toggleSupport(minutes) { setLocal((prev) => ({ ...prev, soporteRemoto: { habilitado: !prev.soporteRemoto.habilitado, vence: minutes } })); }
+  async function handleLogoFile(file) {
+    if (!file) return;
+    setLogoError("");
+    setLogoMessage("");
+    setLogoProcessing(true);
+    try {
+      const optimized = await compressPortalLogo(file);
+      setLocal((prev) => ({
+        ...prev,
+        logo: optimized.dataUrl,
+        logoMeta: {
+          originalBytes: optimized.originalBytes,
+          finalBytes: optimized.finalBytes,
+          width: optimized.width,
+          height: optimized.height,
+        },
+      }));
+      setLogoMessage(`Logo optimizado: ${formatBytes(optimized.originalBytes)} -> ${formatBytes(optimized.finalBytes)}.`);
+    } catch (error) {
+      setLogoError(error?.message || "No se pudo procesar el logo.");
+    } finally {
+      setLogoProcessing(false);
+    }
+  }
   const paletteOptions = [
     { id: "vivos", title: "Colores vivos", desc: "Tarjetas brillantes con alto impacto visual.", colors: ["bg-emerald-400", "bg-sky-400", "bg-fuchsia-500", "bg-orange-400"] },
     { id: "pasteles", title: "Colores pasteles", desc: "Más suave para emprendimientos delicados o artesanales.", colors: ["bg-pink-300", "bg-sky-200", "bg-emerald-200", "bg-violet-300"] },
@@ -4743,8 +4880,11 @@ function ClienteConfiguracion({ emp, updateEmp, plan }) {
             <InputField label="Logo / iniciales o URL de imagen" value={local.logo} onChange={(e) => change("logo", e.target.value)} icon={<Palette />} />
             <div className="rounded-2xl bg-slate-950/60 border border-white/10 p-4">
               <label className="text-sm font-bold text-slate-200 mb-2 block">Subir logo desde computadora o celular</label>
-              <input type="file" accept="image/*" onChange={(e)=>change("logoFile", e.target.files?.[0]?.name || "")} className="block w-full text-sm text-slate-200 file:mr-4 file:rounded-xl file:border-0 file:bg-sky-500 file:px-4 file:py-2 file:font-bold file:text-white" />
-              <p className="text-xs text-slate-400 mt-2">Ahora guardamos la referencia visual. Con Supabase Storage vamos a guardar la imagen real.</p>
+              <input type="file" accept="image/*" onChange={(e)=>handleLogoFile(e.target.files?.[0])} className="block w-full text-sm text-slate-200 file:mr-4 file:rounded-xl file:border-0 file:bg-sky-500 file:px-4 file:py-2 file:font-bold file:text-white" />
+              <p className="text-xs text-slate-400 mt-2">Maximo permitido: {formatBytes(PORTAL_LOGO_MAX_UPLOAD_BYTES)}. Se comprime automaticamente y reemplaza las iniciales del panel y del portal.</p>
+              {logoProcessing && <p className="mt-2 text-xs font-bold text-sky-700">Optimizando logo...</p>}
+              {logoMessage && <p className="mt-2 text-xs font-bold text-emerald-700">{logoMessage}</p>}
+              {logoError && <p className="mt-2 text-xs font-bold text-red-600">{logoError}</p>}
             </div>
             <Button onClick={() => updateEmp(local)} className="w-full bg-gradient-to-r from-sky-400 via-blue-500 to-indigo-600 text-white py-6 rounded-2xl">Guardar configuración</Button>
           </CardContent>
