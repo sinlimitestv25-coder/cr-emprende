@@ -1085,7 +1085,7 @@ function App() {
               <SidebarButton active={activePage === "usuarios"} icon={<Users />} label="Usuarios" onClick={() => setActivePage("usuarios")} />
               <SidebarButton active={activePage === "emprendimientos"} icon={<Building2 />} label="Emprendimientos" onClick={() => setActivePage("emprendimientos")} />
               <SidebarButton active={activePage === "suspendidos"} icon={<AlertTriangle />} label="Suspendidos" onClick={() => setActivePage("suspendidos")} />
-              <SidebarButton active={activePage === "portales"} icon={<Globe />} label="Portales" onClick={() => setActivePage("portales")} />
+              <SidebarButton active={activePage === "estadisticas"} icon={<LayoutDashboard />} label="Estadísticas" onClick={() => setActivePage("estadisticas")} />
               <SidebarButton active={activePage === "rubros"} icon={<Boxes />} label="Rubros" onClick={() => setActivePage("rubros")} />
               <SidebarButton active={activePage === "modulos"} icon={<Settings />} label="Módulos" onClick={() => setActivePage("modulos")} />
               <SidebarButton active={activePage === "planes"} icon={<CreditCard />} label="Planes" onClick={() => setActivePage("planes")} />
@@ -1134,7 +1134,7 @@ function App() {
           {isAdmin && activePage === "usuarios" && <UsuariosPage usuarios={usuarios} emprendimientos={emprendimientos} onNewUser={() => setIsUserModalOpen(true)} onRenewUser={renewUser} onChangePassword={changeUserPassword} />}
           {isAdmin && activePage === "emprendimientos" && <EmprendimientosPage emprendimientos={filteredEmprendimientos} search={search} setSearch={setSearch} onNewBusiness={() => setIsBusinessWizardOpen(true)} onChangeAccountStatus={updateBusinessAccountStatus} setSelectedEmpId={setSelectedEmpId} setActivePage={setActivePage} />}
           {isAdmin && activePage === "suspendidos" && <SuspendidosPage emprendimientos={emprendimientos} onChangeAccountStatus={updateBusinessAccountStatus} />}
-          {isAdmin && activePage === "portales" && <PortalesAdminPage emprendimientos={emprendimientos} publicaciones={publicaciones} consultasPortal={consultasPortal} portalViews={portalViews} />}
+          {isAdmin && activePage === "estadisticas" && <EstadisticasAdminPage emprendimientos={emprendimientos} publicaciones={publicaciones} consultasPortal={consultasPortal} portalViews={portalViews} portalCommissions={portalCommissions} />}
           {isAdmin && activePage === "rubros" && <RubrosManagerPage rubros={rubros} modules={modulesBase} onChange={setRubros} />}
           {isAdmin && activePage === "modulos" && <ModulosPage modules={modulesBase} rubros={rubros} />}
           {isAdmin && activePage === "planes" && <PlanesPage planes={planes} />}
@@ -2275,7 +2275,7 @@ function HistorialAdminPage({ historial }) {
   );
 }
 
-function PortalesAdminPage({ emprendimientos, publicaciones, consultasPortal, portalViews }) {
+function PortalesStatsSection({ emprendimientos, publicaciones, consultasPortal, portalViews }) {
   const [copied, setCopied] = useState("");
   const rows = emprendimientos.map((emp) => {
     const status = accountStatusLabel(emp);
@@ -2285,11 +2285,6 @@ function PortalesAdminPage({ emprendimientos, publicaciones, consultasPortal, po
     const visible = status === "Activo";
     return { ...emp, status, visible, activePublications, totalPublications, consultas, views: Number(portalViews[emp.id] || 0) };
   });
-  const visibles = rows.filter((row) => row.visible).length;
-  const ocultos = rows.filter((row) => !row.visible).length;
-  const totalPublicaciones = rows.reduce((acc, row) => acc + row.totalPublications, 0);
-  const totalConsultas = rows.reduce((acc, row) => acc + row.consultas, 0);
-  const totalViews = rows.reduce((acc, row) => acc + row.views, 0);
 
   function portalLink(empId) {
     if (typeof window === "undefined") return `?portal=${empId}`;
@@ -2308,15 +2303,6 @@ function PortalesAdminPage({ emprendimientos, publicaciones, consultasPortal, po
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Portales" subtitle="Vista de control de portales publicos, publicaciones, consultas y links para compartir." />
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4">
-        <StatCard icon={<Globe />} label="Visibles" value={visibles} className={statColorStyles.emerald.card} iconClassName={statColorStyles.emerald.icon} />
-        <StatCard icon={<EyeOff />} label="Ocultos" value={ocultos} className={statColorStyles.rose.card} iconClassName={statColorStyles.rose.icon} />
-        <StatCard icon={<Package />} label="Publicaciones" value={totalPublicaciones} className={statColorStyles.sky.card} iconClassName={statColorStyles.sky.icon} />
-        <StatCard icon={<MessageCircle />} label="Consultas" value={totalConsultas} className={statColorStyles.amber.card} iconClassName={statColorStyles.amber.icon} />
-        <StatCard icon={<Eye />} label="Visitas" value={totalViews} className={statColorStyles.violet.card} iconClassName={statColorStyles.violet.icon} />
-      </div>
-
       {copied && <div className="rounded-2xl border border-emerald-300/30 bg-emerald-500/10 p-4 text-sm font-bold text-emerald-200">{copied}</div>}
 
       <Card>
@@ -2350,6 +2336,81 @@ function PortalesAdminPage({ emprendimientos, publicaciones, consultasPortal, po
           </table>
         </CardContent>
       </Card>
+
+    </div>
+  );
+}
+
+function EstadisticasAdminPage({ emprendimientos, publicaciones, consultasPortal, portalViews, portalCommissions }) {
+  const rows = emprendimientos.map((emp) => {
+    const empPublicaciones = publicaciones.filter((item) => item.emprendimientoId === emp.id);
+    const empConsultas = consultasPortal.filter((item) => item.emprendimientoId === emp.id);
+    const empCommissions = portalCommissions.filter((item) => item.emprendimientoId === emp.id);
+    const visitas = Number(portalViews[emp.id] || 0);
+    const consultas = empConsultas.length;
+    const publicacionesVisibles = empPublicaciones.filter((item) => item.estado === "Visible").length;
+    const ventasPortal = empCommissions.length;
+    const conversion = visitas > 0 ? Math.round((consultas / visitas) * 100) : 0;
+    const ventaPotencial = empCommissions.reduce((acc, item) => acc + Number(item.venta || 0), 0);
+    return { ...emp, visitas, consultas, publicacionesVisibles, ventasPortal, conversion, ventaPotencial };
+  });
+  const totalVisitas = rows.reduce((acc, item) => acc + item.visitas, 0);
+  const totalConsultas = rows.reduce((acc, item) => acc + item.consultas, 0);
+  const totalPublicacionesVisibles = rows.reduce((acc, item) => acc + item.publicacionesVisibles, 0);
+  const totalVentasPortal = rows.reduce((acc, item) => acc + item.ventasPortal, 0);
+  const labels = rows.map((item) => item.nombre.split(" ")[0] || item.id);
+
+  return (
+    <div className="space-y-6">
+      <PageHeader title="Estadísticas" subtitle="Lectura general de actividad en portales, consultas y conversiones por emprendedor." />
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <StatCard icon={<Eye />} label="Visitas totales" value={totalVisitas} className={statColorStyles.sky.card} iconClassName={statColorStyles.sky.icon} />
+        <StatCard icon={<MessageCircle />} label="Consultas" value={totalConsultas} className={statColorStyles.amber.card} iconClassName={statColorStyles.amber.icon} />
+        <StatCard icon={<Package />} label="Publicaciones visibles" value={totalPublicacionesVisibles} className={statColorStyles.emerald.card} iconClassName={statColorStyles.emerald.icon} />
+        <StatCard icon={<ShoppingBag />} label="Ventas portal" value={totalVentasPortal} className={statColorStyles.violet.card} iconClassName={statColorStyles.violet.icon} />
+      </div>
+
+      <MiniLineChart
+        title="Actividad por emprendedor"
+        subtitle="Comparativo actual de visitas, consultas y publicaciones visibles."
+        labels={labels}
+        series={[
+          { label: "Visitas", values: rows.map((item) => item.visitas), color: "#2563eb", point: "#1d4ed8" },
+          { label: "Consultas", values: rows.map((item) => item.consultas), color: "#f59e0b", point: "#d97706" },
+          { label: "Publicaciones", values: rows.map((item) => item.publicacionesVisibles), color: "#059669", point: "#047857" },
+        ]}
+      />
+
+      <Card>
+        <CardContent className="p-5 overflow-x-auto">
+          <div className="mb-5">
+            <h2 className="text-xl font-bold text-white">Detalle por emprendedor</h2>
+            <p className="text-sm text-slate-300 mt-1">Estos datos salen del prototipo actual. Más adelante se guardan por fecha, dispositivo y producto visto.</p>
+          </div>
+          <table className="w-full text-sm min-w-[1080px]">
+            <TableHead headers={["Emprendimiento", "Estado", "Visitas", "Consultas", "Conversión", "Publicaciones", "Ventas portal", "Venta potencial"]} />
+            <tbody>
+              {rows.map((emp) => (
+                <tr key={emp.id} className="border-b border-slate-800">
+                  <td className="py-4 pr-4">
+                    <p className="font-black text-white">{emp.nombre}</p>
+                    <p className="text-xs text-slate-300">{emp.id} - {emp.rubro}</p>
+                  </td>
+                  <td className="py-4 pr-4"><StatusBadge label={accountStatusLabel(emp)} tone={accountStatusTone(emp)} /></td>
+                  <td className="py-4 pr-4 text-slate-100 font-black">{emp.visitas}</td>
+                  <td className="py-4 pr-4 text-slate-100 font-black">{emp.consultas}</td>
+                  <td className="py-4 pr-4"><StatusBadge label={`${emp.conversion}%`} tone={emp.conversion > 0 ? "success" : "info"} /></td>
+                  <td className="py-4 pr-4 text-slate-100">{emp.publicacionesVisibles}</td>
+                  <td className="py-4 pr-4 text-slate-100">{emp.ventasPortal}</td>
+                  <td className="py-4 pr-4 text-slate-100 font-black">{money(emp.ventaPotencial)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </CardContent>
+      </Card>
+
+      <PortalesStatsSection emprendimientos={emprendimientos} publicaciones={publicaciones} consultasPortal={consultasPortal} portalViews={portalViews} />
     </div>
   );
 }
