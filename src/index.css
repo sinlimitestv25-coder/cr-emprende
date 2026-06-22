@@ -573,6 +573,19 @@ button.bg-gradient-to-r .text-black {
   color: #1d4ed8 !important;
 }
 
+.rounded-2xl.bg-blue-500\/10 .text-sky-100,
+.rounded-2xl.border.bg-blue-500\/10 .text-sky-100 {
+  color: #1e3a8a !important;
+  font-size: 1rem !important;
+  font-weight: 900 !important;
+}
+
+.rounded-2xl.bg-blue-500\/10 .text-slate-300,
+.rounded-2xl.border.bg-blue-500\/10 .text-slate-300 {
+  color: #334155 !important;
+  font-weight: 700 !important;
+}
+
 .rounded-2xl.border.bg-emerald-400\/10 .text-emerald-200,
 .rounded-2xl.border.bg-emerald-400\/10 .text-emerald-300 {
   color: #047857 !important;

@@ -3462,7 +3462,7 @@ function ClienteRecetas({ emp }) {
             </div>
             <Button onClick={() => setShowNewRecipe(true)} className="gap-2 bg-gradient-to-r from-emerald-400 via-teal-500 to-cyan-500 text-white shadow-lg shadow-cyan-950/30"><Plus className="w-4 h-4" /> Nueva receta</Button>
           </div>
-          <div className="rounded-2xl bg-slate-950/60 border border-sky-400/20 p-4">
+          <div className="rounded-2xl bg-blue-500/10 border border-blue-500/20 p-4">
             <p className="text-sm text-sky-100 font-bold">Precio sugerido = costo de receta ÷ (1 - margen)</p>
             <p className="text-xs text-slate-300 mt-2">La receta trae el precio de cada insumo según su unidad: gramos, mililitros o unidades.</p>
           </div>
