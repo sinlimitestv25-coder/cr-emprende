@@ -1093,6 +1093,7 @@ function App() {
               <SidebarButton active={activePage === "soporte"} icon={<ShieldCheck />} label="Soporte remoto" onClick={() => setActivePage("soporte")} />
               <SidebarButton active={activePage === "mensajes"} icon={<Mail />} label="Mensajes" onClick={() => setActivePage("mensajes")} />
               <SidebarButton active={activePage === "historial"} icon={<ClipboardList />} label="Historial" onClick={() => setActivePage("historial")} />
+              <SidebarButton active={activePage === "configuracion-admin"} icon={<Settings />} label="Configuración" onClick={() => setActivePage("configuracion-admin")} />
             </>
           ) : (
             <>
@@ -1142,6 +1143,7 @@ function App() {
           {isAdmin && activePage === "soporte" && <SoporteAdminPage emprendimientos={emprendimientos} setSelectedEmpId={setSelectedEmpId} setActivePage={setActivePage} />}
           {isAdmin && activePage === "mensajes" && <MensajesAdminPage mensajes={mensajes} emprendimientos={emprendimientos} onReply={replyMensaje} />}
           {isAdmin && activePage === "historial" && <HistorialAdminPage historial={historialAdmin} />}
+          {isAdmin && activePage === "configuracion-admin" && <ConfiguracionAdminPage commissionSettings={commissionSettings} />}
 
           {!isAdmin && isUserAccountBlocked && <BlockedAccountNotice emp={selectedEmp} />}
           {!isAdmin && !isUserAccountBlocked && activePage === "mi-panel" && <ClienteDashboard emp={selectedEmp} setActivePage={setActivePage} />}
@@ -2272,6 +2274,80 @@ function HistorialAdminPage({ historial }) {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+function ConfiguracionAdminPage({ commissionSettings }) {
+  const accountRules = [
+    ["Activo", "Puede entrar, editar, publicar y mostrar portal."],
+    ["Suspendido", "Puede iniciar sesion, ve aviso, no puede modificar y el portal queda oculto."],
+    ["Eliminado", "No tiene acceso operativo. En Supabase se borraran datos definitivos segun decision administrativa."],
+    ["Resguardo", "La cuenta suspendida conserva datos hasta 90 dias."],
+    ["Avisos", "Dia 30 primer aviso, dia 60 segundo aviso, dia 85 ultimo aviso, dia 90 eliminacion manual."],
+  ];
+  const portalRules = [
+    ["Productos/fotos", `Maximo ${PORTAL_PUBLICATION_LIMIT} publicaciones por portal.`],
+    ["Logo", `Maximo ${formatBytes(PORTAL_LOGO_MAX_UPLOAD_BYTES)}. Compresion automatica a ${formatBytes(PORTAL_LOGO_TARGET_BYTES)} aprox.`],
+    ["Banner", `Maximo ${formatBytes(PORTAL_BANNER_MAX_UPLOAD_BYTES)}. Compresion automatica a ${formatBytes(PORTAL_BANNER_TARGET_BYTES)} aprox.`],
+    ["Foto producto", `Maximo ${formatBytes(PORTAL_IMAGE_MAX_UPLOAD_BYTES)}. Compresion automatica a ${formatBytes(PORTAL_IMAGE_TARGET_BYTES)} aprox.`],
+    ["Cache", "El portal usa cache local para reducir lecturas mientras seguimos en prototipo."],
+  ];
+  const commercialRules = [
+    ["Comision portal", `${commissionSettings.porcentaje}% por venta concretada desde portal.`],
+    ["Limite mensual", money(commissionSettings.limiteMensual)],
+    ["Cobro", "Manual por ahora. El registro se acumula para revisar al renovar el mes."],
+    ["Aviso al usuario", "Cuando cambia la comision, el emprendedor ve un modal informativo al ingresar."],
+  ];
+
+  return (
+    <div className="space-y-6">
+      <PageHeader title="Configuracion" subtitle="Reglas operativas actuales del administrador. Esto deja claro como se comporta el sistema antes de pasarlo a Supabase." />
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <StatCard icon={<ShieldCheck />} label="Estados" value="3" className={statColorStyles.emerald.card} iconClassName={statColorStyles.emerald.icon} />
+        <StatCard icon={<Clock />} label="Resguardo" value="90 dias" className={statColorStyles.amber.card} iconClassName={statColorStyles.amber.icon} />
+        <StatCard icon={<Package />} label="Limite portal" value={PORTAL_PUBLICATION_LIMIT} className={statColorStyles.sky.card} iconClassName={statColorStyles.sky.icon} />
+        <StatCard icon={<DollarSign />} label="Comision" value={`${commissionSettings.porcentaje}%`} className={statColorStyles.violet.card} iconClassName={statColorStyles.violet.icon} />
+      </div>
+
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+        <RulesCard title="Estados de cuenta" icon={<Users />} rows={accountRules} />
+        <RulesCard title="Portal publico" icon={<Globe />} rows={portalRules} />
+        <RulesCard title="Reglas comerciales" icon={<DollarSign />} rows={commercialRules} />
+      </div>
+
+      <Card>
+        <CardContent className="p-5">
+          <h2 className="text-xl font-bold text-white">Pendiente para Supabase</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">
+            <ArchitectureRow icon={<ClipboardList />} title="Tablas" text="emprendedores, acciones_administrativas, publicaciones, consultas, estadisticas_portal y comisiones_portal." />
+            <ArchitectureRow icon={<ShieldCheck />} title="Reglas" text="El backend debe derivar la visibilidad del portal desde el estado de cuenta, sin boton manual separado." />
+            <ArchitectureRow icon={<Clock />} title="Automatizacion" text="Cron o tarea programada para avisos dia 30/60/85 y eliminacion al dia 90 si se aprueba automatizar." />
+            <ArchitectureRow icon={<Eye />} title="Metricas" text="Guardar visitas, consultas, clicks y productos vistos con fecha y dispositivo desde el inicio." />
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+function RulesCard({ title, icon, rows }) {
+  return (
+    <Card>
+      <CardContent className="p-5">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="h-11 w-11 rounded-2xl bg-blue-600 text-white flex items-center justify-center">{React.cloneElement(icon, { className: "w-5 h-5" })}</div>
+          <h2 className="text-xl font-bold text-white">{title}</h2>
+        </div>
+        <div className="space-y-3">
+          {rows.map(([label, text]) => (
+            <div key={label} className="rounded-2xl border border-slate-800 bg-slate-950 p-4">
+              <p className="text-sm font-black text-sky-300 uppercase tracking-wide">{label}</p>
+              <p className="text-sm text-slate-100 mt-1">{text}</p>
+            </div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
