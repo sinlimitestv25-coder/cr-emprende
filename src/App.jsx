@@ -2334,13 +2334,12 @@ function ConfiguracionAdminPage({ commissionSettings, onUpdateCommissionSettings
         <StatCard icon={<DollarSign />} label="Comision" value={`${commissionSettings.porcentaje}%`} className={statColorStyles.violet.card} iconClassName={statColorStyles.violet.icon} />
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
         <RulesCard title="Estados de cuenta" icon={<Users />} rows={accountRules} />
         <RulesCard title="Portal publico" icon={<Globe />} rows={portalRules} />
         <RulesCard title="Reglas comerciales" icon={<DollarSign />} rows={commercialRules} />
+        <RulesCard title="Reglas financieras" icon={<CreditCard />} rows={financeRules} />
       </div>
-
-      <RulesCard title="Reglas financieras" icon={<CreditCard />} rows={financeRules} />
 
       <Card>
         <CardContent className="p-5 space-y-4">
@@ -2375,16 +2374,16 @@ function ConfiguracionAdminPage({ commissionSettings, onUpdateCommissionSettings
 function RulesCard({ title, icon, rows }) {
   return (
     <Card>
-      <CardContent className="p-5">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="h-11 w-11 rounded-2xl bg-blue-600 text-white flex items-center justify-center">{React.cloneElement(icon, { className: "w-5 h-5" })}</div>
-          <h2 className="text-xl font-bold text-white">{title}</h2>
+      <CardContent className="p-4">
+        <div className="flex items-center gap-3 mb-3">
+          <div className="h-10 w-10 rounded-2xl bg-blue-600 text-white flex items-center justify-center shrink-0">{React.cloneElement(icon, { className: "w-5 h-5" })}</div>
+          <h2 className="text-base font-black text-white leading-tight">{title}</h2>
         </div>
-        <div className="space-y-3">
+        <div className="space-y-2">
           {rows.map(([label, text]) => (
-            <div key={label} className="rounded-2xl border border-slate-800 bg-slate-950 p-4">
-              <p className="text-sm font-black text-sky-300 uppercase tracking-wide">{label}</p>
-              <p className="text-sm text-slate-100 mt-1">{text}</p>
+            <div key={label} className="rounded-2xl border border-slate-800 bg-slate-950 p-3">
+              <p className="text-xs font-black text-sky-300 uppercase tracking-wide">{label}</p>
+              <p className="text-xs text-slate-100 mt-1 leading-relaxed">{text}</p>
             </div>
           ))}
         </div>
