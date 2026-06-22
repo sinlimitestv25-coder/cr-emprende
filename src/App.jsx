@@ -334,6 +334,7 @@ const STORAGE_KEYS = {
 const PORTAL_IMAGE_MAX_UPLOAD_BYTES = 2 * 1024 * 1024;
 const PORTAL_IMAGE_TARGET_BYTES = 600 * 1024;
 const PORTAL_IMAGE_MAX_DIMENSION = 1400;
+const PORTAL_PUBLICATION_LIMIT = 20;
 
 function loadStoredValue(key, fallback) {
   if (typeof window === "undefined") return fallback;
@@ -1239,25 +1240,25 @@ function PortalPublico({ emp, publicaciones, config, cacheInfo, onConsulta, onVi
 
   return (
     <div className="min-h-screen bg-slate-950 text-white">
-      <section className="relative overflow-hidden border-b border-white/10 px-5 py-4 md:px-8 md:py-5" style={{ backgroundImage: `linear-gradient(90deg, rgba(2,6,23,.94), ${theme.overlay}), url('/fondo-saas.png')`, backgroundSize: "cover", backgroundPosition: "center" }}>
-        <div className="mx-auto max-w-6xl">
-          <div className="mb-4 flex items-center justify-between gap-4">
+      <section className="relative min-h-[320px] overflow-hidden border-b border-white/10 px-5 py-5 md:px-10 md:py-8" style={{ backgroundImage: `linear-gradient(90deg, rgba(2,6,23,.90), ${theme.overlay}), url('/fondo-saas.png')`, backgroundSize: "cover", backgroundPosition: "center" }}>
+        <div className="w-full">
+          <div className="mb-6 flex items-center justify-between gap-4">
             <div className="inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-white/10 px-3 py-2">
-              <img src="/logo-cr.png" alt="C&R Emprende" className="h-8 w-auto rounded bg-white/90 px-1" />
+              <img src="/logo-cr.png" alt="C&R Emprende" className="h-12 w-auto rounded bg-white/90 px-2" />
               <span className="text-xs font-black uppercase tracking-[0.18em] text-sky-200">Emprende</span>
             </div>
-            <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-2xl border border-white/15 bg-white/12 text-2xl font-black text-white">
+            <div className="flex h-40 w-40 md:h-56 md:w-56 lg:h-72 lg:w-72 items-center justify-center overflow-hidden rounded-[2.25rem] border border-white/15 bg-white/12 text-5xl md:text-6xl lg:text-7xl font-black text-white">
               {emp.logo?.startsWith("/") || emp.logo?.startsWith("http") ? <img src={emp.logo} alt={emp.nombre} className="h-full w-full object-cover" /> : emp.logo || emp.nombre.slice(0, 2)}
             </div>
           </div>
-          <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-5">
+          <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
             <div>
               <p className="text-xs font-black uppercase tracking-[0.24em] text-sky-300">Portal de exhibición</p>
-              <h1 className="mt-2 text-3xl md:text-4xl font-black">{emp.nombre}</h1>
-              <p className="mt-2 max-w-2xl text-sm md:text-base text-slate-200">{config?.descripcion || getDefaultPortalConfig(emp).descripcion}</p>
+              <h1 className="mt-2 text-4xl md:text-6xl font-black text-white">{emp.nombre}</h1>
+              <p className="mt-3 max-w-3xl text-base md:text-lg font-semibold text-slate-100">{config?.descripcion || getDefaultPortalConfig(emp).descripcion}</p>
               <p className="mt-2 text-sm text-slate-400">{emp.rubro} · {emp.actividad}</p>
             </div>
-            <div className="rounded-3xl border border-white/10 bg-white/10 p-4 text-sm text-slate-100">
+            <div className="rounded-3xl border border-white/10 bg-white/10 p-5 text-base text-slate-100 min-w-[220px]">
               <p className="font-black text-white">Contacto</p>
               <p className="mt-1">{emp.whatsapp || "WhatsApp pendiente"}</p>
               <p>{emp.instagram || ""}</p>
@@ -1266,8 +1267,8 @@ function PortalPublico({ emp, publicaciones, config, cacheInfo, onConsulta, onVi
         </div>
       </section>
 
-      <main className="mx-auto max-w-6xl p-6 md:p-10 space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+      <main className="w-full p-4 md:p-8 space-y-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
           {publicaciones.map((item) => (
             <div key={item.id} className="overflow-hidden rounded-3xl border border-white/10 bg-slate-900 shadow-2xl shadow-black/30">
               <PublicacionImage item={item} />
@@ -1284,6 +1285,9 @@ function PortalPublico({ emp, publicaciones, config, cacheInfo, onConsulta, onVi
           ))}
         </div>
         {!publicaciones.length && <div className="rounded-3xl border border-white/10 bg-slate-900 p-6 text-slate-300">Este portal todavía no tiene publicaciones visibles.</div>}
+        <div className="rounded-3xl border border-dashed border-slate-300 bg-white/80 p-6 text-center text-sm font-bold text-slate-500">
+          Espacio reservado para sponsors / publicidad
+        </div>
       </main>
 
       {selectedPublication && (
@@ -3670,6 +3674,10 @@ function ClienteExhibicion({ emp, publicaciones, consultas, portalConfig, portal
   function createPublication(event) {
     event.preventDefault();
     if (imageProcessing) return;
+    if (publicaciones.length >= PORTAL_PUBLICATION_LIMIT) {
+      setImageError(`El portal permite hasta ${PORTAL_PUBLICATION_LIMIT} publicaciones.`);
+      return;
+    }
     if (!newPublication.titulo.trim()) return;
     const created = {
       id: `PUB-${Date.now()}`,
@@ -3713,7 +3721,7 @@ function ClienteExhibicion({ emp, publicaciones, consultas, portalConfig, portal
       <PageHeader title="Exhibición" subtitle="Portal público para mostrar productos, recibir consultas y convertir interesados en clientes potenciales." buttonText="Nueva publicación" onButtonClick={() => setShowNewPublication(true)} />
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <ColorStatCard icon={<Eye />} label="Publicaciones" value={publicaciones.length} color="from-sky-400 via-blue-500 to-indigo-600" />
+        <ColorStatCard icon={<Eye />} label="Publicaciones" value={`${publicaciones.length}/${PORTAL_PUBLICATION_LIMIT}`} color="from-sky-400 via-blue-500 to-indigo-600" />
         <ColorStatCard icon={<CheckCircle2 />} label="Visibles" value={visibles} color="from-emerald-400 via-teal-500 to-cyan-500" />
         <ColorStatCard icon={<MessageCircle />} label="Consultas nuevas" value={nuevas} color="from-amber-300 via-orange-500 to-red-500" />
         <ColorStatCard icon={<Eye />} label="Vistas portal" value={portalViews} color="from-violet-500 via-purple-500 to-fuchsia-500" />
@@ -3892,10 +3900,10 @@ function ExhibicionCard({ item, onToggle }) {
 
 function PublicacionImage({ item }) {
   if (item.imagen) {
-    return <img src={item.imagen} alt={item.titulo} className="h-44 w-full object-cover" />;
+    return <img src={item.imagen} alt={item.titulo} className="h-56 w-full object-cover" />;
   }
   return (
-    <div className="h-44 w-full bg-gradient-to-br from-sky-500 via-violet-500 to-emerald-400 flex items-center justify-center">
+    <div className="h-56 w-full bg-gradient-to-br from-sky-500 via-violet-500 to-emerald-400 flex items-center justify-center">
       <Package className="w-14 h-14 text-white/90" />
     </div>
   );
