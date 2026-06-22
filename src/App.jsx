@@ -198,11 +198,87 @@ const productosDemo = [
 const insumosDemo = [
   { id: "INS-1", emprendimientoId: "EMP-001", nombre: "Glicerina", costo: 6200, unidad: "kg", proveedor: "Distribuidora Sur" },
   { id: "INS-2", emprendimientoId: "EMP-001", nombre: "Fragancia lavanda", costo: 3500, unidad: "100ml", proveedor: "Esencias Patagónicas" },
+  { id: "INS-4", emprendimientoId: "EMP-001", nombre: "Aceite de lavanda", costo: 4800, unidad: "50ml", proveedor: "Esencias Patagonicas" },
+  { id: "INS-5", emprendimientoId: "EMP-001", nombre: "Petalos de lavanda secos", costo: 2200, unidad: "50g", proveedor: "Herboristeria Sur" },
+  { id: "INS-6", emprendimientoId: "EMP-001", nombre: "Esencia maracuya", costo: 3900, unidad: "100ml", proveedor: "Esencias Patagonicas" },
+  { id: "INS-7", emprendimientoId: "EMP-001", nombre: "Aceite de chia", costo: 5600, unidad: "50ml", proveedor: "Natural Oil" },
+  { id: "INS-8", emprendimientoId: "EMP-001", nombre: "Semillas de chia", costo: 1800, unidad: "100g", proveedor: "Herboristeria Sur" },
+  { id: "INS-9", emprendimientoId: "EMP-001", nombre: "Harina de arroz fina", costo: 1400, unidad: "500g", proveedor: "Mayorista local" },
+  { id: "INS-10", emprendimientoId: "EMP-001", nombre: "Esencia flor de loto", costo: 4200, unidad: "100ml", proveedor: "Esencias Patagonicas" },
+  { id: "INS-11", emprendimientoId: "EMP-001", nombre: "Aceite de almendras", costo: 5200, unidad: "100ml", proveedor: "Natural Oil" },
+  { id: "INS-12", emprendimientoId: "EMP-001", nombre: "Avena molida", costo: 1200, unidad: "500g", proveedor: "Mayorista local" },
+  { id: "INS-13", emprendimientoId: "EMP-001", nombre: "Miel", costo: 2600, unidad: "500g", proveedor: "Productor local" },
+  { id: "INS-14", emprendimientoId: "EMP-001", nombre: "Carbon activado cosmetico", costo: 3100, unidad: "100g", proveedor: "Insumos Cosmeticos" },
+  { id: "INS-15", emprendimientoId: "EMP-001", nombre: "Aceite de tea tree", costo: 6200, unidad: "50ml", proveedor: "Natural Oil" },
+  { id: "INS-16", emprendimientoId: "EMP-001", nombre: "Gel de aloe vera", costo: 2800, unidad: "250ml", proveedor: "Insumos Cosmeticos" },
+  { id: "INS-17", emprendimientoId: "EMP-001", nombre: "Extracto de calendula", costo: 4600, unidad: "100ml", proveedor: "Natural Oil" },
+  { id: "INS-18", emprendimientoId: "EMP-001", nombre: "Petalos de calendula secos", costo: 2400, unidad: "50g", proveedor: "Herboristeria Sur" },
+  { id: "INS-19", emprendimientoId: "EMP-001", nombre: "Aceite de coco", costo: 4300, unidad: "250ml", proveedor: "Natural Oil" },
+  { id: "INS-20", emprendimientoId: "EMP-001", nombre: "Coco rallado fino", costo: 1700, unidad: "250g", proveedor: "Mayorista local" },
+  { id: "INS-21", emprendimientoId: "EMP-001", nombre: "Esencia rosas", costo: 3900, unidad: "100ml", proveedor: "Esencias Patagonicas" },
+  { id: "INS-22", emprendimientoId: "EMP-001", nombre: "Petalos de rosa secos", costo: 2600, unidad: "50g", proveedor: "Herboristeria Sur" },
+  { id: "INS-23", emprendimientoId: "EMP-001", nombre: "Alcohol cosmetico 70", costo: 1800, unidad: "500ml", proveedor: "Insumos Cosmeticos" },
+  { id: "INS-24", emprendimientoId: "EMP-001", nombre: "Colorante cosmetico", costo: 2500, unidad: "50ml", proveedor: "Insumos Cosmeticos" },
   { id: "INS-3", emprendimientoId: "EMP-002", nombre: "Harina", costo: 1200, unidad: "kg", proveedor: "Mayorista local" },
 ];
 
 const recetasDemo = [
   { id: "REC-1", emprendimientoId: "EMP-001", nombre: "Jabón lavanda x10", insumos: "Glicerina + fragancia + molde", costo: 9500, sugerido: 18000 },
+  { id: "REC-3", emprendimientoId: "EMP-001", nombre: "Jabon maracuya y chia x10", insumos: "Glicerina + maracuya + chia", costo: 9800, sugerido: 19000, margen: 55, items: [
+    { id: "RI-MAR-1", insumoId: "INS-1", cantidad: 1000 },
+    { id: "RI-MAR-2", insumoId: "INS-6", cantidad: 55 },
+    { id: "RI-MAR-3", insumoId: "INS-7", cantidad: 15 },
+    { id: "RI-MAR-4", insumoId: "INS-8", cantidad: 10 },
+    { id: "RI-MAR-5", insumoId: "INS-24", cantidad: 5 },
+  ] },
+  { id: "REC-4", emprendimientoId: "EMP-001", nombre: "Jabon arroz y flor de loto x10", insumos: "Glicerina + arroz + flor de loto", costo: 9200, sugerido: 18500, margen: 55, items: [
+    { id: "RI-LOT-1", insumoId: "INS-1", cantidad: 1000 },
+    { id: "RI-LOT-2", insumoId: "INS-9", cantidad: 22 },
+    { id: "RI-LOT-3", insumoId: "INS-10", cantidad: 50 },
+    { id: "RI-LOT-4", insumoId: "INS-11", cantidad: 15 },
+    { id: "RI-LOT-5", insumoId: "INS-24", cantidad: 4 },
+  ] },
+  { id: "REC-5", emprendimientoId: "EMP-001", nombre: "Jabon avena y miel x10", insumos: "Glicerina + avena + miel", costo: 8800, sugerido: 17500, margen: 52, items: [
+    { id: "RI-AVE-1", insumoId: "INS-1", cantidad: 1000 },
+    { id: "RI-AVE-2", insumoId: "INS-12", cantidad: 35 },
+    { id: "RI-AVE-3", insumoId: "INS-13", cantidad: 30 },
+    { id: "RI-AVE-4", insumoId: "INS-11", cantidad: 10 },
+  ] },
+  { id: "REC-6", emprendimientoId: "EMP-001", nombre: "Jabon carbon activado x10", insumos: "Glicerina + carbon + tea tree", costo: 9400, sugerido: 18800, margen: 55, items: [
+    { id: "RI-CAR-1", insumoId: "INS-1", cantidad: 1000 },
+    { id: "RI-CAR-2", insumoId: "INS-14", cantidad: 12 },
+    { id: "RI-CAR-3", insumoId: "INS-15", cantidad: 14 },
+    { id: "RI-CAR-4", insumoId: "INS-23", cantidad: 10 },
+  ] },
+  { id: "REC-7", emprendimientoId: "EMP-001", nombre: "Jabon aloe vera x10", insumos: "Glicerina + aloe vera", costo: 8700, sugerido: 17500, margen: 52, items: [
+    { id: "RI-ALO-1", insumoId: "INS-1", cantidad: 1000 },
+    { id: "RI-ALO-2", insumoId: "INS-16", cantidad: 45 },
+    { id: "RI-ALO-3", insumoId: "INS-11", cantidad: 10 },
+    { id: "RI-ALO-4", insumoId: "INS-24", cantidad: 3 },
+  ] },
+  { id: "REC-8", emprendimientoId: "EMP-001", nombre: "Jabon calendula x10", insumos: "Glicerina + calendula", costo: 9300, sugerido: 18500, margen: 54, items: [
+    { id: "RI-CAL-1", insumoId: "INS-1", cantidad: 1000 },
+    { id: "RI-CAL-2", insumoId: "INS-17", cantidad: 35 },
+    { id: "RI-CAL-3", insumoId: "INS-18", cantidad: 8 },
+    { id: "RI-CAL-4", insumoId: "INS-11", cantidad: 10 },
+  ] },
+  { id: "REC-9", emprendimientoId: "EMP-001", nombre: "Jabon coco nutritivo x10", insumos: "Glicerina + coco", costo: 9100, sugerido: 18000, margen: 53, items: [
+    { id: "RI-COC-1", insumoId: "INS-1", cantidad: 1000 },
+    { id: "RI-COC-2", insumoId: "INS-19", cantidad: 22 },
+    { id: "RI-COC-3", insumoId: "INS-20", cantidad: 18 },
+  ] },
+  { id: "REC-10", emprendimientoId: "EMP-001", nombre: "Jabon rosas x10", insumos: "Glicerina + rosas", costo: 9000, sugerido: 18000, margen: 53, items: [
+    { id: "RI-ROS-1", insumoId: "INS-1", cantidad: 1000 },
+    { id: "RI-ROS-2", insumoId: "INS-21", cantidad: 50 },
+    { id: "RI-ROS-3", insumoId: "INS-22", cantidad: 8 },
+    { id: "RI-ROS-4", insumoId: "INS-24", cantidad: 4 },
+  ] },
+  { id: "REC-11", emprendimientoId: "EMP-001", nombre: "Jabon antibacterial suave x10", insumos: "Glicerina + tea tree + alcohol cosmetico", costo: 9600, sugerido: 19500, margen: 55, items: [
+    { id: "RI-ANT-1", insumoId: "INS-1", cantidad: 1000 },
+    { id: "RI-ANT-2", insumoId: "INS-15", cantidad: 18 },
+    { id: "RI-ANT-3", insumoId: "INS-23", cantidad: 18 },
+    { id: "RI-ANT-4", insumoId: "INS-24", cantidad: 3 },
+  ] },
   { id: "REC-2", emprendimientoId: "EMP-002", nombre: "Alfajor x12", insumos: "Harina + dulce + chocolate", costo: 5200, sugerido: 9600 },
 ];
 
@@ -3268,6 +3344,15 @@ function ClienteRecetas({ emp }) {
   };
   const buildInitialItems = (recipeName) => {
     if (emp.id === "EMP-001") {
+      if (recipeName.toLowerCase().includes("lavanda")) {
+        return [
+          { id: "RI-LAV-1", insumoId: "INS-1", cantidad: 1000 },
+          { id: "RI-LAV-2", insumoId: "INS-2", cantidad: 55 },
+          { id: "RI-LAV-3", insumoId: "INS-4", cantidad: 18 },
+          { id: "RI-LAV-4", insumoId: "INS-5", cantidad: 8 },
+          { id: "RI-LAV-5", insumoId: "INS-24", cantidad: 4 },
+        ];
+      }
       return [
         { id: "RI-1", insumoId: "INS-1", cantidad: recipeName.toLowerCase().includes("lavanda") ? 1000 : 800 },
         { id: "RI-2", insumoId: "INS-2", cantidad: recipeName.toLowerCase().includes("lavanda") ? 60 : 40 },
@@ -3280,7 +3365,7 @@ function ClienteRecetas({ emp }) {
     .map((r) => ({
       ...r,
       margen: 50,
-      items: buildInitialItems(r.nombre),
+      items: r.items || buildInitialItems(r.nombre),
     }));
   const [recetas, setRecetas] = useState(initialRecipes);
   const [expandedRecipeId, setExpandedRecipeId] = useState(null);
