@@ -583,6 +583,15 @@ function getSuspendedDays(emp) {
   return Math.max(0, Math.floor((today - date) / (1000 * 60 * 60 * 24)));
 }
 
+function suspensionWarning(emp) {
+  const days = getSuspendedDays(emp);
+  if (days >= 90) return { label: "Eliminar", tone: "danger", detail: "Llego al limite de 90 dias." };
+  if (days >= 85) return { label: "Ultimo aviso", tone: "danger", detail: "Quedan pocos dias antes de eliminar." };
+  if (days >= 60) return { label: "Segundo aviso", tone: "warning", detail: "Seguimiento recomendado." };
+  if (days >= 30) return { label: "Primer aviso", tone: "warning", detail: "Conviene contactar al emprendedor." };
+  return { label: "Seguimiento", tone: "info", detail: "Dentro del periodo de resguardo." };
+}
+
 function formatDateTime(value) {
   const date = value instanceof Date ? value : new Date(value);
   if (Number.isNaN(date.getTime())) return "Sin fecha";
@@ -678,6 +687,7 @@ function App() {
     { id: "MSG-001", emprendimientoId: "EMP-001", usuarioId: "USR-001", adminId: "ADMIN-CR-001", de: "Rodrigo Jabones", asunto: "Consulta sobre presupuestos", categoria: "Consulta", mensaje: "Hola, quería saber si podemos agregar una opción para guardar presupuestos frecuentes.", estado: "Nuevo", fecha: "Hoy 10:20", respuesta: "", fechaRespuesta: "" },
     { id: "MSG-002", emprendimientoId: "EMP-002", usuarioId: "USR-002", adminId: "ADMIN-CR-001", de: "Ana Repostería", asunto: "Ayuda con recetas", categoria: "Ayuda", mensaje: "Necesito revisar cómo cargar los costos de una receta nueva.", estado: "Respondido", fecha: "Ayer 18:05", respuesta: "Sí, Ana. Entrá en Producción / Recetas y cargá primero la materia prima. Después armamos la receta con cantidades para calcular costo por unidad.", fechaRespuesta: "Ayer 18:42", respondidoPor: "C&R Soporte" },
   ]);
+  const [historialAdmin, setHistorialAdmin] = useState([]);
   const [historialComercial, setHistorialComercial] = useState([]);
   const [publicaciones, setPublicaciones] = useState(() => loadStoredValue(STORAGE_KEYS.publicaciones, exhibicionInicial));
   const [consultasPortal, setConsultasPortal] = useState(() => loadStoredValue(STORAGE_KEYS.consultasPortal, []));
@@ -845,6 +855,25 @@ function App() {
   function updateBusinessAccountStatus(empId, status) {
     const nextStatus = accountStatusLabel({ estado: status });
     const today = todayISO();
+    const currentEmp = emprendimientos.find((emp) => emp.id === empId);
+    const actionByStatus = {
+      Activo: "cuenta_reactivada",
+      Suspendido: "cuenta_suspendida",
+      Eliminado: "cuenta_eliminada",
+    };
+    setHistorialAdmin((prev) => [
+      {
+        id: `ADM-${Date.now().toString().slice(-6)}`,
+        adminId: "ADMIN-CR-001",
+        admin: "Super Administrador",
+        emprendimientoId: empId,
+        emprendimiento: currentEmp?.nombre || empId,
+        accion: actionByStatus[nextStatus] || "estado_modificado",
+        detalle: `${currentEmp?.nombre || empId}: ${accountStatusLabel(currentEmp)} -> ${nextStatus}`,
+        fecha: new Date().toLocaleString("es-AR", { dateStyle: "short", timeStyle: "short" }),
+      },
+      ...prev,
+    ]);
     setEmprendimientos((prev) =>
       prev.map((emp) => {
         if (emp.id !== empId) return emp;
@@ -1055,12 +1084,14 @@ function App() {
               <SidebarButton active={activePage === "dashboard"} icon={<LayoutDashboard />} label="Dashboard" onClick={() => setActivePage("dashboard")} />
               <SidebarButton active={activePage === "usuarios"} icon={<Users />} label="Usuarios" onClick={() => setActivePage("usuarios")} />
               <SidebarButton active={activePage === "emprendimientos"} icon={<Building2 />} label="Emprendimientos" onClick={() => setActivePage("emprendimientos")} />
+              <SidebarButton active={activePage === "suspendidos"} icon={<AlertTriangle />} label="Suspendidos" onClick={() => setActivePage("suspendidos")} />
               <SidebarButton active={activePage === "rubros"} icon={<Boxes />} label="Rubros" onClick={() => setActivePage("rubros")} />
               <SidebarButton active={activePage === "modulos"} icon={<Settings />} label="Módulos" onClick={() => setActivePage("modulos")} />
               <SidebarButton active={activePage === "planes"} icon={<CreditCard />} label="Planes" onClick={() => setActivePage("planes")} />
               <SidebarButton active={activePage === "suscripciones"} icon={<DollarSign />} label="Finanzas" onClick={() => setActivePage("suscripciones")} />
               <SidebarButton active={activePage === "soporte"} icon={<ShieldCheck />} label="Soporte remoto" onClick={() => setActivePage("soporte")} />
               <SidebarButton active={activePage === "mensajes"} icon={<Mail />} label="Mensajes" onClick={() => setActivePage("mensajes")} />
+              <SidebarButton active={activePage === "historial"} icon={<ClipboardList />} label="Historial" onClick={() => setActivePage("historial")} />
             </>
           ) : (
             <>
@@ -1101,12 +1132,14 @@ function App() {
           {isAdmin && activePage === "dashboard" && <AdminDashboard emprendimientos={emprendimientos} usuarios={usuarios} rubros={rubros} planes={planes} setActivePage={setActivePage} onRegisterCommercialEvent={registerCommercialEvent} />}
           {isAdmin && activePage === "usuarios" && <UsuariosPage usuarios={usuarios} emprendimientos={emprendimientos} onNewUser={() => setIsUserModalOpen(true)} onRenewUser={renewUser} onChangePassword={changeUserPassword} />}
           {isAdmin && activePage === "emprendimientos" && <EmprendimientosPage emprendimientos={filteredEmprendimientos} search={search} setSearch={setSearch} onNewBusiness={() => setIsBusinessWizardOpen(true)} onChangeAccountStatus={updateBusinessAccountStatus} setSelectedEmpId={setSelectedEmpId} setActivePage={setActivePage} />}
+          {isAdmin && activePage === "suspendidos" && <SuspendidosPage emprendimientos={emprendimientos} onChangeAccountStatus={updateBusinessAccountStatus} />}
           {isAdmin && activePage === "rubros" && <RubrosManagerPage rubros={rubros} modules={modulesBase} onChange={setRubros} />}
           {isAdmin && activePage === "modulos" && <ModulosPage modules={modulesBase} rubros={rubros} />}
           {isAdmin && activePage === "planes" && <PlanesPage planes={planes} />}
           {isAdmin && activePage === "suscripciones" && <SuscripcionesPage emprendimientos={emprendimientos} planes={planes} historialComercial={historialComercial} commissionSettings={commissionSettings} onUpdateCommissionSettings={updateCommissionSettings} portalCommissions={portalCommissions} />}
           {isAdmin && activePage === "soporte" && <SoporteAdminPage emprendimientos={emprendimientos} setSelectedEmpId={setSelectedEmpId} setActivePage={setActivePage} />}
           {isAdmin && activePage === "mensajes" && <MensajesAdminPage mensajes={mensajes} emprendimientos={emprendimientos} onReply={replyMensaje} />}
+          {isAdmin && activePage === "historial" && <HistorialAdminPage historial={historialAdmin} />}
 
           {!isAdmin && isUserAccountBlocked && <BlockedAccountNotice emp={selectedEmp} />}
           {!isAdmin && !isUserAccountBlocked && activePage === "mi-panel" && <ClienteDashboard emp={selectedEmp} setActivePage={setActivePage} />}
@@ -2033,7 +2066,7 @@ function EmprendimientosPage({ emprendimientos, search, setSearch, onNewBusiness
         onButtonClick={onNewBusiness}
       />
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4">
         <StatCard icon={<Building2 />} label="Emprendimientos" value={emprendimientos.length} className={statColorStyles.sky.card} iconClassName={statColorStyles.sky.icon} />
         <StatCard icon={<CheckCircle2 />} label="Activos" value={totalActivos} className={statColorStyles.emerald.card} iconClassName={statColorStyles.emerald.icon} />
         <StatCard icon={<AlertTriangle />} label="Suspendidos" value={suspendidos} className={statColorStyles.amber.card} iconClassName={statColorStyles.amber.icon} />
@@ -2126,6 +2159,116 @@ function EmprendimientosPage({ emprendimientos, search, setSearch, onNewBusiness
           </div>
         </ModalShell>
       )}
+    </div>
+  );
+}
+
+function SuspendidosPage({ emprendimientos, onChangeAccountStatus }) {
+  const suspendidos = emprendimientos.filter((emp) => accountStatusLabel(emp) === "Suspendido");
+  const aviso30 = suspendidos.filter((emp) => getSuspendedDays(emp) >= 30).length;
+  const aviso60 = suspendidos.filter((emp) => getSuspendedDays(emp) >= 60).length;
+  const aviso85 = suspendidos.filter((emp) => getSuspendedDays(emp) >= 85).length;
+
+  return (
+    <div className="space-y-6">
+      <PageHeader title="Suspendidos" subtitle="Control manual de cuentas suspendidas, dias de resguardo y acciones antes de los 90 dias." />
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <StatCard icon={<AlertTriangle />} label="Suspendidos" value={suspendidos.length} className={statColorStyles.amber.card} iconClassName={statColorStyles.amber.icon} />
+        <StatCard icon={<Clock />} label="Aviso dia 30" value={aviso30} className={statColorStyles.sky.card} iconClassName={statColorStyles.sky.icon} />
+        <StatCard icon={<CalendarClock />} label="Aviso dia 60" value={aviso60} className={statColorStyles.violet.card} iconClassName={statColorStyles.violet.icon} />
+        <StatCard icon={<Lock />} label="Ultimo aviso" value={aviso85} className={statColorStyles.rose.card} iconClassName={statColorStyles.rose.icon} />
+      </div>
+
+      <Card>
+        <CardContent className="p-5 overflow-x-auto">
+          <div className="mb-5">
+            <h2 className="text-xl font-bold text-white">Cuentas en resguardo</h2>
+            <p className="text-sm text-slate-300 mt-1">Día 30 primer aviso, día 60 segundo aviso, día 85 último aviso, día 90 eliminación manual.</p>
+          </div>
+          {suspendidos.length ? (
+            <table className="w-full text-sm min-w-[980px]">
+              <TableHead headers={["Emprendimiento", "Usuario", "Fecha suspension", "Dias", "Aviso", "Portal", "Acciones"]} />
+              <tbody>
+                {suspendidos.map((emp) => {
+                  const warning = suspensionWarning(emp);
+                  return (
+                    <tr key={emp.id} className="border-b border-slate-800">
+                      <td className="py-4 pr-4">
+                        <p className="font-black text-white">{emp.nombre}</p>
+                        <p className="text-xs text-slate-300">{emp.id} - {emp.plan}</p>
+                      </td>
+                      <td className="py-4 pr-4 text-slate-100">{emp.owner || "Sin usuario"}</td>
+                      <td className="py-4 pr-4 text-slate-100">{emp.fechaSuspension ? isoToEsDate(emp.fechaSuspension) : "Sin fecha"}</td>
+                      <td className="py-4 pr-4 text-slate-100 font-black">{getSuspendedDays(emp)} dias</td>
+                      <td className="py-4 pr-4">
+                        <div className="space-y-1">
+                          <StatusBadge label={warning.label} tone={warning.tone} />
+                          <p className="text-xs text-slate-300">{warning.detail}</p>
+                        </div>
+                      </td>
+                      <td className="py-4 pr-4"><StatusBadge label="Oculto" tone="danger" /></td>
+                      <td className="py-4 pr-4">
+                        <div className="flex flex-wrap gap-2">
+                          <Button type="button" onClick={() => onChangeAccountStatus(emp.id, "Activo")} className="bg-emerald-600 text-white px-3 py-2 text-xs">Reactivar</Button>
+                          <Button type="button" onClick={() => onChangeAccountStatus(emp.id, "Eliminado")} className="bg-red-600 text-white px-3 py-2 text-xs">Eliminar</Button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          ) : (
+            <div className="rounded-3xl border border-emerald-300/30 bg-emerald-500/10 p-6 text-center">
+              <CheckCircle2 className="mx-auto w-10 h-10 text-emerald-300" />
+              <p className="text-lg font-black text-white mt-3">No hay cuentas suspendidas</p>
+              <p className="text-sm text-slate-300 mt-1">Cuando suspendas una cuenta desde Emprendimientos, va a aparecer aca.</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+function HistorialAdminPage({ historial }) {
+  return (
+    <div className="space-y-6">
+      <PageHeader title="Historial" subtitle="Registro interno de acciones administrativas sobre cuentas, planes y portales." />
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <StatCard icon={<ClipboardList />} label="Acciones" value={historial.length} className={statColorStyles.sky.card} iconClassName={statColorStyles.sky.icon} />
+        <StatCard icon={<AlertTriangle />} label="Suspensiones" value={historial.filter((item) => item.accion === "cuenta_suspendida").length} className={statColorStyles.amber.card} iconClassName={statColorStyles.amber.icon} />
+        <StatCard icon={<CheckCircle2 />} label="Reactivaciones" value={historial.filter((item) => item.accion === "cuenta_reactivada").length} className={statColorStyles.emerald.card} iconClassName={statColorStyles.emerald.icon} />
+      </div>
+      <Card>
+        <CardContent className="p-5 overflow-x-auto">
+          {historial.length ? (
+            <table className="w-full text-sm min-w-[880px]">
+              <TableHead headers={["Fecha", "Admin", "Emprendimiento", "Accion", "Detalle"]} />
+              <tbody>
+                {historial.map((item) => (
+                  <tr key={item.id} className="border-b border-slate-800">
+                    <td className="py-4 pr-4 text-slate-100 whitespace-nowrap">{item.fecha}</td>
+                    <td className="py-4 pr-4 text-slate-100">{item.admin}</td>
+                    <td className="py-4 pr-4">
+                      <p className="font-bold text-white">{item.emprendimiento}</p>
+                      <p className="text-xs text-slate-300">{item.emprendimientoId}</p>
+                    </td>
+                    <td className="py-4 pr-4"><Badge>{item.accion}</Badge></td>
+                    <td className="py-4 pr-4 text-slate-100">{item.detalle}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : (
+            <div className="rounded-3xl border border-blue-300/20 bg-blue-500/10 p-6 text-center">
+              <ClipboardList className="mx-auto w-10 h-10 text-sky-300" />
+              <p className="text-lg font-black text-white mt-3">Todavia no hay acciones registradas</p>
+              <p className="text-sm text-slate-300 mt-1">Suspender, reactivar o eliminar una cuenta va a crear el primer registro.</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
