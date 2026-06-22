@@ -153,6 +153,9 @@ const emprendimientosIniciales = [
     estadoPago: "Pagado",
     fechaAlta: "01/06/2026",
     estado: "Activo",
+    portalVisible: true,
+    fechaSuspension: null,
+    fechaEliminacion: null,
     vencimiento: "30/06/2026",
     owner: "Rodrigo Jabones",
     color: "Dorado",
@@ -172,6 +175,9 @@ const emprendimientosIniciales = [
     estadoPago: "Pendiente",
     fechaAlta: "18/06/2026",
     estado: "Activo",
+    portalVisible: true,
+    fechaSuspension: null,
+    fechaEliminacion: null,
     vencimiento: "18/07/2026",
     owner: "Ana Repostería",
     color: "Rosa pastel",
@@ -380,6 +386,10 @@ function buildPortalCache(emprendimientos, publicaciones, portalConfig) {
         logo: emp.logo,
         whatsapp: emp.whatsapp,
         instagram: emp.instagram,
+        estado: accountStatusLabel(emp),
+        portalVisible: emp.portalVisible !== false,
+        fechaSuspension: emp.fechaSuspension || null,
+        fechaEliminacion: emp.fechaEliminacion || null,
       },
       config: {
         ...getDefaultPortalConfig(emp),
@@ -550,6 +560,29 @@ function isoToEsDate(value) {
   return `${day}/${month}/${year}`;
 }
 
+function accountStatusLabel(emp) {
+  const value = String(emp?.estado || "Activo").toLowerCase();
+  if (value.includes("suspend")) return "Suspendido";
+  if (value.includes("elimin")) return "Eliminado";
+  return "Activo";
+}
+
+function accountStatusTone(emp) {
+  const status = accountStatusLabel(emp);
+  if (status === "Suspendido") return "warning";
+  if (status === "Eliminado") return "danger";
+  return "success";
+}
+
+function getSuspendedDays(emp) {
+  const date = parseEsDate(emp?.fechaSuspension);
+  if (!date) return 0;
+  date.setHours(0, 0, 0, 0);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return Math.max(0, Math.floor((today - date) / (1000 * 60 * 60 * 24)));
+}
+
 function formatDateTime(value) {
   const date = value instanceof Date ? value : new Date(value);
   if (Number.isNaN(date.getTime())) return "Sin fecha";
@@ -656,6 +689,8 @@ function App() {
 
   const selectedEmp = emprendimientos.find((e) => e.id === selectedEmpId) || emprendimientos[0];
   const isAdmin = loginRole === "Super Admin";
+  const selectedEmpStatus = accountStatusLabel(selectedEmp);
+  const isUserAccountBlocked = !isAdmin && (selectedEmpStatus === "Suspendido" || selectedEmpStatus === "Eliminado");
 
   const filteredEmprendimientos = useMemo(() => {
     const term = search.toLowerCase();
@@ -805,6 +840,23 @@ function App() {
   function updateEmprendimientoSettings(updated) {
     setEmprendimientos((prev) => prev.map((e) => (e.id === updated.id ? updated : e)));
     setSelectedEmpId(updated.id);
+  }
+
+  function updateBusinessAccountStatus(empId, status) {
+    const nextStatus = accountStatusLabel({ estado: status });
+    const today = todayISO();
+    setEmprendimientos((prev) =>
+      prev.map((emp) => {
+        if (emp.id !== empId) return emp;
+        if (nextStatus === "Suspendido") {
+          return { ...emp, estado: "Suspendido", portalVisible: false, fechaSuspension: emp.fechaSuspension || today, fechaEliminacion: null };
+        }
+        if (nextStatus === "Eliminado") {
+          return { ...emp, estado: "Eliminado", portalVisible: false, fechaEliminacion: today };
+        }
+        return { ...emp, estado: "Activo", portalVisible: true, fechaSuspension: null, fechaEliminacion: null };
+      })
+    );
   }
 
   function sendMensaje(nuevo) {
@@ -968,7 +1020,10 @@ function App() {
   }
 
   if (portalEmpIdFromUrl) {
-    const cachedPortal = portalCache[portalEmpIdFromUrl] || buildPortalCache(emprendimientos, publicaciones, portalConfig)[portalEmpIdFromUrl];
+    const livePortal = buildPortalCache(emprendimientos, publicaciones, portalConfig)[portalEmpIdFromUrl];
+    const cachedPortal = portalCache[portalEmpIdFromUrl]
+      ? { ...portalCache[portalEmpIdFromUrl], emp: { ...portalCache[portalEmpIdFromUrl].emp, ...(livePortal?.emp || {}) } }
+      : livePortal;
     return (
       <PortalPublico
         emp={cachedPortal?.emp}
@@ -1045,7 +1100,7 @@ function App() {
 
           {isAdmin && activePage === "dashboard" && <AdminDashboard emprendimientos={emprendimientos} usuarios={usuarios} rubros={rubros} planes={planes} setActivePage={setActivePage} onRegisterCommercialEvent={registerCommercialEvent} />}
           {isAdmin && activePage === "usuarios" && <UsuariosPage usuarios={usuarios} emprendimientos={emprendimientos} onNewUser={() => setIsUserModalOpen(true)} onRenewUser={renewUser} onChangePassword={changeUserPassword} />}
-          {isAdmin && activePage === "emprendimientos" && <EmprendimientosPage emprendimientos={filteredEmprendimientos} search={search} setSearch={setSearch} onNewBusiness={() => setIsBusinessWizardOpen(true)} setSelectedEmpId={setSelectedEmpId} setActivePage={setActivePage} />}
+          {isAdmin && activePage === "emprendimientos" && <EmprendimientosPage emprendimientos={filteredEmprendimientos} search={search} setSearch={setSearch} onNewBusiness={() => setIsBusinessWizardOpen(true)} onChangeAccountStatus={updateBusinessAccountStatus} setSelectedEmpId={setSelectedEmpId} setActivePage={setActivePage} />}
           {isAdmin && activePage === "rubros" && <RubrosManagerPage rubros={rubros} modules={modulesBase} onChange={setRubros} />}
           {isAdmin && activePage === "modulos" && <ModulosPage modules={modulesBase} rubros={rubros} />}
           {isAdmin && activePage === "planes" && <PlanesPage planes={planes} />}
@@ -1053,28 +1108,29 @@ function App() {
           {isAdmin && activePage === "soporte" && <SoporteAdminPage emprendimientos={emprendimientos} setSelectedEmpId={setSelectedEmpId} setActivePage={setActivePage} />}
           {isAdmin && activePage === "mensajes" && <MensajesAdminPage mensajes={mensajes} emprendimientos={emprendimientos} onReply={replyMensaje} />}
 
-          {!isAdmin && activePage === "mi-panel" && <ClienteDashboard emp={selectedEmp} setActivePage={setActivePage} />}
-          {!isAdmin && activePage === "productos" && <ClienteProductos emp={selectedEmp} />}
-          {!isAdmin && activePage === "insumos" && <ClienteInsumos emp={selectedEmp} />}
-          {!isAdmin && activePage === "proveedores" && <ClienteProveedores emp={selectedEmp} />}
-          {!isAdmin && activePage === "recetas" && <ClienteRecetas emp={selectedEmp} />}
-          {!isAdmin && activePage === "clientes" && <ClienteClientes emp={selectedEmp} potenciales={consultasPortal.filter((consulta) => consulta.emprendimientoId === selectedEmp.id && consulta.estado === "Potencial")} />}
-          {!isAdmin && activePage === "exhibicion" && <ClienteExhibicion emp={selectedEmp} publicaciones={publicaciones.filter((item) => item.emprendimientoId === selectedEmp.id)} consultas={consultasPortal.filter((consulta) => consulta.emprendimientoId === selectedEmp.id)} portalConfig={portalConfig[selectedEmp.id] || getDefaultPortalConfig(selectedEmp)} portalViews={portalViews[selectedEmp.id] || 0} portalCacheInfo={portalCache[selectedEmp.id]} commissionSettings={commissionSettings} portalCommissions={portalCommissions.filter((item) => item.emprendimientoId === selectedEmp.id)} setPublicaciones={setPublicaciones} onUpdateConsulta={updatePortalConsulta} onUpdatePortalConfig={updatePortalConfig} onRegisterSale={registerPortalSale} />}
-          {!isAdmin && activePage === "presupuestos" && <ClientePresupuestos emp={selectedEmp} />}
-          {!isAdmin && activePage === "pedidos" && <ClientePedidos emp={selectedEmp} />}
-          {!isAdmin && activePage === "finanzas" && <ClienteFinanzas emp={selectedEmp} />}
-          {!isAdmin && activePage === "reportes" && <ClienteReportes emp={selectedEmp} />}
-          {!isAdmin && activePage === "whatsapp" && <ClienteWhatsApp emp={selectedEmp} />}
-          {!isAdmin && activePage === "configuracion" && <ClienteConfiguracion emp={selectedEmp} updateEmp={updateEmprendimientoSettings} plan={planes.find((p) => p.nombre === selectedEmp.plan)} />}
-          {!isAdmin && activePage === "mensajes" && <ClienteMensajesPage emp={selectedEmp} mensajes={mensajes.filter((m) => m.emprendimientoId === selectedEmp.id)} onSend={sendMensaje} />}
+          {!isAdmin && isUserAccountBlocked && <BlockedAccountNotice emp={selectedEmp} />}
+          {!isAdmin && !isUserAccountBlocked && activePage === "mi-panel" && <ClienteDashboard emp={selectedEmp} setActivePage={setActivePage} />}
+          {!isAdmin && !isUserAccountBlocked && activePage === "productos" && <ClienteProductos emp={selectedEmp} />}
+          {!isAdmin && !isUserAccountBlocked && activePage === "insumos" && <ClienteInsumos emp={selectedEmp} />}
+          {!isAdmin && !isUserAccountBlocked && activePage === "proveedores" && <ClienteProveedores emp={selectedEmp} />}
+          {!isAdmin && !isUserAccountBlocked && activePage === "recetas" && <ClienteRecetas emp={selectedEmp} />}
+          {!isAdmin && !isUserAccountBlocked && activePage === "clientes" && <ClienteClientes emp={selectedEmp} potenciales={consultasPortal.filter((consulta) => consulta.emprendimientoId === selectedEmp.id && consulta.estado === "Potencial")} />}
+          {!isAdmin && !isUserAccountBlocked && activePage === "exhibicion" && <ClienteExhibicion emp={selectedEmp} publicaciones={publicaciones.filter((item) => item.emprendimientoId === selectedEmp.id)} consultas={consultasPortal.filter((consulta) => consulta.emprendimientoId === selectedEmp.id)} portalConfig={portalConfig[selectedEmp.id] || getDefaultPortalConfig(selectedEmp)} portalViews={portalViews[selectedEmp.id] || 0} portalCacheInfo={portalCache[selectedEmp.id]} commissionSettings={commissionSettings} portalCommissions={portalCommissions.filter((item) => item.emprendimientoId === selectedEmp.id)} setPublicaciones={setPublicaciones} onUpdateConsulta={updatePortalConsulta} onUpdatePortalConfig={updatePortalConfig} onRegisterSale={registerPortalSale} />}
+          {!isAdmin && !isUserAccountBlocked && activePage === "presupuestos" && <ClientePresupuestos emp={selectedEmp} />}
+          {!isAdmin && !isUserAccountBlocked && activePage === "pedidos" && <ClientePedidos emp={selectedEmp} />}
+          {!isAdmin && !isUserAccountBlocked && activePage === "finanzas" && <ClienteFinanzas emp={selectedEmp} />}
+          {!isAdmin && !isUserAccountBlocked && activePage === "reportes" && <ClienteReportes emp={selectedEmp} />}
+          {!isAdmin && !isUserAccountBlocked && activePage === "whatsapp" && <ClienteWhatsApp emp={selectedEmp} />}
+          {!isAdmin && !isUserAccountBlocked && activePage === "configuracion" && <ClienteConfiguracion emp={selectedEmp} updateEmp={updateEmprendimientoSettings} plan={planes.find((p) => p.nombre === selectedEmp.plan)} />}
+          {!isAdmin && !isUserAccountBlocked && activePage === "mensajes" && <ClienteMensajesPage emp={selectedEmp} mensajes={mensajes.filter((m) => m.emprendimientoId === selectedEmp.id)} onSend={sendMensaje} />}
 
           {isAdmin && activePage === "vista-cliente" && <ClienteDashboard emp={selectedEmp} adminView onBack={() => setActivePage("soporte")} />}
         </div>
       </main>
 
       {showDemoExpired && !isAdmin && expiredDemoUser && <DemoExpiredModal user={expiredDemoUser} onClose={closeDemoExpired} />}
-      {showWelcome && !isAdmin && <WelcomeModal emp={selectedEmp} onClose={() => setShowWelcome(false)} onMessages={() => { setShowWelcome(false); setActivePage("mensajes"); }} />}
-      {!isAdmin && currentUser && commissionSettings.updatedAt && (currentUser.commissionNoticeVersion || 0) < commissionSettings.version && <CommissionNoticeModal settings={commissionSettings} onClose={() => markCommissionNoticeSeen(currentUser.id)} />}
+      {showWelcome && !isAdmin && !isUserAccountBlocked && <WelcomeModal emp={selectedEmp} onClose={() => setShowWelcome(false)} onMessages={() => { setShowWelcome(false); setActivePage("mensajes"); }} />}
+      {!isAdmin && !isUserAccountBlocked && currentUser && commissionSettings.updatedAt && (currentUser.commissionNoticeVersion || 0) < commissionSettings.version && <CommissionNoticeModal settings={commissionSettings} onClose={() => markCommissionNoticeSeen(currentUser.id)} />}
       {isBusinessWizardOpen && <BusinessWizard rubros={rubros} planes={planes} modules={modulesBase} onClose={() => setIsBusinessWizardOpen(false)} onCreate={(nuevo) => { setEmprendimientos((prev) => [nuevo, ...prev]); setIsBusinessWizardOpen(false); setActivePage("emprendimientos"); }} />}
       {isUserModalOpen && <UsuarioModal rubros={rubros} planes={planes} onClose={() => setIsUserModalOpen(false)} onCreate={(nuevo) => { setUsuarios((prev) => [nuevo, ...prev]); setIsUserModalOpen(false); }} />}
     </div>
@@ -1112,6 +1168,54 @@ function DemoCountdownCard({ remainingMs, expiresOn }) {
       </div>
       <p className={`mt-2 text-2xl font-black tabular-nums ${isEndingSoon ? "text-amber-300" : "text-cyan-200"}`}>{formatRemaining(remainingMs)}</p>
       <p className="mt-1 text-[11px] leading-snug text-slate-300">Finaliza {formatDateTime(expiresOn)}</p>
+    </div>
+  );
+}
+
+function BlockedAccountNotice({ emp }) {
+  const status = accountStatusLabel(emp);
+  const suspendedDays = getSuspendedDays(emp);
+  const isDeleted = status === "Eliminado";
+
+  return (
+    <div className="min-h-[70vh] flex items-center justify-center">
+      <div className={`w-full max-w-3xl rounded-[2rem] border p-7 shadow-2xl ${isDeleted ? "bg-red-50 border-red-200 shadow-red-900/10" : "bg-amber-50 border-amber-200 shadow-amber-900/10"}`}>
+        <div className="flex flex-col md:flex-row md:items-start gap-5">
+          <div className={`w-16 h-16 rounded-3xl flex items-center justify-center border ${isDeleted ? "bg-red-600 border-red-700 text-white" : "bg-amber-500 border-amber-600 text-white"}`}>
+            {isDeleted ? <Lock className="w-8 h-8" /> : <AlertTriangle className="w-8 h-8" />}
+          </div>
+          <div className="flex-1">
+            <p className={`text-xs font-black uppercase tracking-[0.16em] ${isDeleted ? "text-red-700" : "text-amber-700"}`}>Cuenta {status.toLowerCase()}</p>
+            <h1 className="text-3xl font-black text-slate-950 mt-2">{emp?.nombre || "Emprendimiento"}</h1>
+            <p className="text-slate-700 font-semibold mt-3">
+              {isDeleted
+                ? "Esta cuenta fue eliminada y no tiene acceso operativo al panel."
+                : "Tu cuenta se encuentra suspendida. Para reactivar el servicio, comunicate con C&R Emprende."}
+            </p>
+            {!isDeleted && (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-5">
+                <InfoPill label="Fecha suspension" value={emp?.fechaSuspension ? isoToEsDate(emp.fechaSuspension) : "Pendiente"} />
+                <InfoPill label="Dias suspendido" value={suspendedDays} />
+                <InfoPill label="Portal publico" value="Oculto" />
+              </div>
+            )}
+            {!isDeleted && suspendedDays >= 85 && (
+              <div className="mt-5 rounded-2xl bg-red-600 text-white p-4 font-bold">
+                Aviso importante: la cuenta esta cerca del limite de 90 dias de suspension.
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function InfoPill({ label, value }) {
+  return (
+    <div className="rounded-2xl bg-white border border-slate-200 p-4 shadow-sm">
+      <p className="text-xs font-black uppercase tracking-wide text-slate-500">{label}</p>
+      <p className="text-xl font-black text-slate-950 mt-1">{value}</p>
     </div>
   );
 }
@@ -1268,7 +1372,9 @@ function PortalPublico({ emp, publicaciones, config, cacheInfo, onConsulta, onVi
     );
   }
 
-  if (emp.estado === "Eliminado") {
+  const status = accountStatusLabel(emp);
+
+  if (status === "Eliminado") {
     return (
       <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center p-6">
         <div className="max-w-md rounded-3xl border border-red-400/20 bg-red-400/10 p-6 text-center">
@@ -1279,12 +1385,12 @@ function PortalPublico({ emp, publicaciones, config, cacheInfo, onConsulta, onVi
     );
   }
 
-  if (emp.estado === "Suspendido") {
+  if (status === "Suspendido" || emp.portalVisible === false) {
     return (
       <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center p-6">
         <div className="max-w-xl rounded-3xl border border-amber-400/20 bg-amber-400/10 p-6 text-center">
-          <h1 className="text-2xl font-black">Portal suspendido temporalmente</h1>
-          <p className="text-slate-200 mt-2">El emprendimiento conserva sus datos por 90 dias, pero el portal publico queda oculto hasta regularizar la cuenta.</p>
+          <h1 className="text-2xl font-black">Este emprendimiento no esta disponible actualmente.</h1>
+          <p className="text-slate-200 mt-2">El portal publico queda oculto hasta que la cuenta vuelva a estar activa.</p>
         </div>
       </div>
     );
@@ -1403,6 +1509,10 @@ function AdminDashboard({ emprendimientos, usuarios, rubros, planes, setActivePa
   }));
   const usuariosSinRubro = usuarios.filter((u) => !u.rubro).length;
   if (usuariosSinRubro) usuariosPorRubro.push({ label: "Sin rubro", value: usuariosSinRubro });
+  const emprendedoresActivos = emprendimientos.filter((e) => accountStatusLabel(e) === "Activo").length;
+  const emprendedoresSuspendidos = emprendimientos.filter((e) => accountStatusLabel(e) === "Suspendido").length;
+  const emprendedoresEliminados = emprendimientos.filter((e) => accountStatusLabel(e) === "Eliminado").length;
+  const portalesVisibles = emprendimientos.filter((e) => accountStatusLabel(e) === "Activo" && e.portalVisible !== false).length;
 
   const alertas = [
     ...usuarios
@@ -1492,17 +1602,17 @@ function AdminDashboard({ emprendimientos, usuarios, rubros, planes, setActivePa
     },
   ];
   const estadoCards = [
-    { label: "Activos", value: usuarios.filter((u) => u.estado === "Activo").length, icon: <CheckCircle2 />, className: statColorStyles.emerald.card, iconClassName: statColorStyles.emerald.icon },
-    { label: "Demos", value: usuariosDemo, icon: <Clock />, className: statColorStyles.sky.card, iconClassName: statColorStyles.sky.icon },
-    { label: "Pagos pendientes", value: usuariosPendientes, icon: <DollarSign />, className: statColorStyles.amber.card, iconClassName: statColorStyles.amber.icon },
-    { label: "Sin emprendimiento", value: usuariosSinEmprendimiento, icon: <AlertTriangle />, className: statColorStyles.violet.card, iconClassName: statColorStyles.violet.icon },
+    { label: "Activos", value: emprendedoresActivos, icon: <CheckCircle2 />, className: statColorStyles.emerald.card, iconClassName: statColorStyles.emerald.icon },
+    { label: "Suspendidos", value: emprendedoresSuspendidos, icon: <AlertTriangle />, className: statColorStyles.amber.card, iconClassName: statColorStyles.amber.icon },
+    { label: "Eliminados", value: emprendedoresEliminados, icon: <Lock />, className: statColorStyles.rose.card, iconClassName: statColorStyles.rose.icon },
+    { label: "Portales visibles", value: portalesVisibles, icon: <Globe />, className: statColorStyles.sky.card, iconClassName: statColorStyles.sky.icon },
   ];
 
   return (
     <div className="space-y-6">
       <PageHeader title="Dashboard administrador" subtitle="Resumen visual del sistema. Desde acá ves el estado general y entrás rápido a cada módulo." />
       <HeroBanner title="Hola, Rodrigo 👋" subtitle="Bienvenido a C&R Emprende. Este panel es para visualizar el estado general de usuarios, rubros, emprendimientos y soporte." />
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
         {dashboardCards.map((card) => (
           <DashboardActionCard
             key={card.label}
@@ -1894,11 +2004,25 @@ const rubroCardPalettes = [
   { card: "border-violet-300/40 bg-gradient-to-br from-violet-500 via-fuchsia-600 to-indigo-700 shadow-2xl shadow-violet-950/35", icon: "bg-white/20 text-white border-white/25", badge: "text-white", chip: "bg-violet-700/70 border-violet-200/30 text-white" },
 ];
 
-function EmprendimientosPage({ emprendimientos, search, setSearch, onNewBusiness }) {
+function EmprendimientosPage({ emprendimientos, search, setSearch, onNewBusiness, onChangeAccountStatus }) {
   const [selected, setSelected] = useState(null);
-  const totalActivos = emprendimientos.filter((e) => e.estado === "Activo").length;
+  const totalActivos = emprendimientos.filter((e) => accountStatusLabel(e) === "Activo").length;
+  const suspendidos = emprendimientos.filter((e) => accountStatusLabel(e) === "Suspendido").length;
   const pendientes = emprendimientos.filter((e) => e.estadoPago === "Pendiente").length;
-  const bonificados = emprendimientos.filter((e) => e.estadoPago === "Bonificado").length;
+  const eliminados = emprendimientos.filter((e) => accountStatusLabel(e) === "Eliminado").length;
+
+  function changeStatus(event, empId, status) {
+    event.stopPropagation();
+    const nextStatus = accountStatusLabel({ estado: status });
+    const today = todayISO();
+    onChangeAccountStatus(empId, status);
+    setSelected((current) => {
+      if (current?.id !== empId) return current;
+      if (nextStatus === "Suspendido") return { ...current, estado: "Suspendido", portalVisible: false, fechaSuspension: current.fechaSuspension || today, fechaEliminacion: null };
+      if (nextStatus === "Eliminado") return { ...current, estado: "Eliminado", portalVisible: false, fechaEliminacion: today };
+      return { ...current, estado: "Activo", portalVisible: true, fechaSuspension: null, fechaEliminacion: null };
+    });
+  }
 
   return (
     <div className="space-y-6">
@@ -1912,26 +2036,26 @@ function EmprendimientosPage({ emprendimientos, search, setSearch, onNewBusiness
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <StatCard icon={<Building2 />} label="Emprendimientos" value={emprendimientos.length} className={statColorStyles.sky.card} iconClassName={statColorStyles.sky.icon} />
         <StatCard icon={<CheckCircle2 />} label="Activos" value={totalActivos} className={statColorStyles.emerald.card} iconClassName={statColorStyles.emerald.icon} />
-        <StatCard icon={<CreditCard />} label="Pagos pendientes" value={pendientes} className={statColorStyles.amber.card} iconClassName={statColorStyles.amber.icon} />
-        <StatCard icon={<ClipboardList />} label="Bonificados" value={bonificados} className={statColorStyles.violet.card} iconClassName={statColorStyles.violet.icon} />
+        <StatCard icon={<AlertTriangle />} label="Suspendidos" value={suspendidos} className={statColorStyles.amber.card} iconClassName={statColorStyles.amber.icon} />
+        <StatCard icon={<CreditCard />} label="Pagos pendientes" value={pendientes} className={statColorStyles.violet.card} iconClassName={statColorStyles.violet.icon} />
+        <StatCard icon={<Lock />} label="Eliminados" value={eliminados} className={statColorStyles.rose.card} iconClassName={statColorStyles.rose.icon} />
       </div>
 
       <Card>
         <CardContent className="p-5 overflow-x-auto">
           <TableToolbar title="Listado de emprendimientos" search={search} setSearch={setSearch} placeholder="Buscar por nombre, usuario, rubro o actividad..." />
-          <table className="w-full text-sm min-w-[980px]">
-            <TableHead headers={["ID", "Emprendimiento", "Usuario", "Rubro", "Actividad", "Plan / Pago", "Vencimiento", "Estado"]} />
+          <table className="w-full text-sm min-w-[1180px]">
+            <TableHead headers={["ID", "Emprendimiento", "Usuario", "Rubro", "Plan / Pago", "Vencimiento", "Cuenta", "Portal", "Suspendido", "Acciones"]} />
             <tbody>
               {emprendimientos.map((e) => (
                 <tr key={e.id} onClick={() => setSelected(e)} className="border-b border-slate-800 hover:bg-blue-500/5 cursor-pointer transition">
                   <td className="py-3 pr-4 text-sky-300 font-bold whitespace-nowrap">{e.id}</td>
                   <td className="py-3 pr-4 min-w-48">
                     <p className="font-bold text-white">{e.nombre}</p>
-                    <p className="text-xs text-slate-400">Alta: {e.fechaAlta || "Pendiente"}</p>
+                    <p className="text-xs text-slate-400">{e.actividad || "Sin actividad"} - Alta: {e.fechaAlta || "Pendiente"}</p>
                   </td>
                   <td className="py-3 pr-4 text-slate-200 whitespace-nowrap">{e.owner}</td>
                   <td className="py-3 pr-4"><Badge>{e.rubro}</Badge></td>
-                  <td className="py-3 pr-4 text-slate-200">{e.actividad || "Sin actividad"}</td>
                   <td className="py-3 pr-4">
                     <div className="flex flex-col gap-1 items-start">
                       <Badge>{e.plan}</Badge>
@@ -1939,7 +2063,22 @@ function EmprendimientosPage({ emprendimientos, search, setSearch, onNewBusiness
                     </div>
                   </td>
                   <td className="py-3 pr-4 text-center whitespace-nowrap">{e.vencimiento}</td>
-                  <td className="py-3 pr-4"><StatusBadge label={e.estado} tone="success" /></td>
+                  <td className="py-3 pr-4"><StatusBadge label={accountStatusLabel(e)} tone={accountStatusTone(e)} /></td>
+                  <td className="py-3 pr-4"><StatusBadge label={e.portalVisible === false ? "Oculto" : "Visible"} tone={e.portalVisible === false ? "danger" : "success"} /></td>
+                  <td className="py-3 pr-4 text-slate-100 whitespace-nowrap">{accountStatusLabel(e) === "Suspendido" ? `${getSuspendedDays(e)} dias` : "-"}</td>
+                  <td className="py-3 pr-4">
+                    <div className="flex flex-wrap gap-2">
+                      {accountStatusLabel(e) !== "Suspendido" && accountStatusLabel(e) !== "Eliminado" && (
+                        <Button type="button" onClick={(event) => changeStatus(event, e.id, "Suspendido")} className="bg-amber-500 text-white px-3 py-2 text-xs">Suspender</Button>
+                      )}
+                      {accountStatusLabel(e) === "Suspendido" && (
+                        <Button type="button" onClick={(event) => changeStatus(event, e.id, "Activo")} className="bg-emerald-600 text-white px-3 py-2 text-xs">Reactivar</Button>
+                      )}
+                      {accountStatusLabel(e) !== "Eliminado" && (
+                        <Button type="button" onClick={(event) => changeStatus(event, e.id, "Eliminado")} className="bg-red-600 text-white px-3 py-2 text-xs">Eliminar</Button>
+                      )}
+                    </div>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -1959,6 +2098,10 @@ function EmprendimientosPage({ emprendimientos, search, setSearch, onNewBusiness
               <InfoItem label="Estado de pago" value={selected.estadoPago || "Pendiente"} />
               <InfoItem label="Fecha de alta" value={selected.fechaAlta || "Pendiente"} />
               <InfoItem label="Fecha de vencimiento" value={selected.vencimiento} />
+              <InfoItem label="Estado de cuenta" value={accountStatusLabel(selected)} highlight />
+              <InfoItem label="Portal publico" value={selected.portalVisible === false ? "Oculto" : "Visible"} />
+              <InfoItem label="Fecha de suspension" value={selected.fechaSuspension ? isoToEsDate(selected.fechaSuspension) : "Sin suspension"} />
+              <InfoItem label="Dias suspendido" value={accountStatusLabel(selected) === "Suspendido" ? getSuspendedDays(selected) : 0} />
               <InfoItem label="WhatsApp" value={selected.whatsapp || "Sin cargar"} />
               <InfoItem label="Instagram" value={selected.instagram || "Sin cargar"} />
             </div>
@@ -1968,8 +2111,17 @@ function EmprendimientosPage({ emprendimientos, search, setSearch, onNewBusiness
                 <div className="flex flex-wrap gap-2">{selected.modulos.map((m) => <Badge key={m}>{m}</Badge>)}</div>
               </CardContent>
             </Card>
-            <div className="flex gap-3">
-              <Button onClick={() => setSelected(null)} className="w-full bg-slate-800 text-white">Cerrar</Button>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+              <Button onClick={() => setSelected(null)} className="bg-slate-800 text-white">Cerrar</Button>
+              {accountStatusLabel(selected) !== "Suspendido" && accountStatusLabel(selected) !== "Eliminado" && (
+                <Button onClick={(event) => changeStatus(event, selected.id, "Suspendido")} className="bg-amber-500 text-white">Suspender</Button>
+              )}
+              {accountStatusLabel(selected) === "Suspendido" && (
+                <Button onClick={(event) => changeStatus(event, selected.id, "Activo")} className="bg-emerald-600 text-white">Reactivar</Button>
+              )}
+              {accountStatusLabel(selected) !== "Eliminado" && (
+                <Button onClick={(event) => changeStatus(event, selected.id, "Eliminado")} className="bg-red-600 text-white">Eliminar</Button>
+              )}
             </div>
           </div>
         </ModalShell>
@@ -5217,6 +5369,9 @@ function BusinessWizard({ rubros, planes, onClose, onCreate }) {
       estadoPago: form.estadoPago,
       fechaAlta: new Date().toLocaleDateString("es-AR"),
       estado: "Activo",
+      portalVisible: true,
+      fechaSuspension: null,
+      fechaEliminacion: null,
       vencimiento: isoToEsDate(form.vencimiento),
       owner: form.owner || "Sin dueño",
       color: form.color,
