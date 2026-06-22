@@ -1593,8 +1593,8 @@ function AdminDashboard({ emprendimientos, usuarios, rubros, planes, setActivePa
       className: "from-emerald-500 via-teal-600 to-cyan-700 border-emerald-300/40 text-white shadow-emerald-950/35",
     },
     {
-      label: "Planes Elite",
-      value: elite,
+      label: "Planes",
+      value: planes.length,
       icon: <ShieldCheck />,
       page: "planes",
       description: "Planes y soporte avanzado",
@@ -1612,7 +1612,7 @@ function AdminDashboard({ emprendimientos, usuarios, rubros, planes, setActivePa
     <div className="space-y-6">
       <PageHeader title="Dashboard administrador" subtitle="Resumen visual del sistema. Desde acá ves el estado general y entrás rápido a cada módulo." />
       <HeroBanner title="Hola, Rodrigo 👋" subtitle="Bienvenido a C&R Emprende. Este panel es para visualizar el estado general de usuarios, rubros, emprendimientos y soporte." />
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         {dashboardCards.map((card) => (
           <DashboardActionCard
             key={card.label}
@@ -5599,7 +5599,7 @@ function DashboardActionCard({ icon, label, value, description, className, onCli
     <button
       type="button"
       onClick={onClick}
-      className={`group relative overflow-hidden rounded-[1.75rem] border bg-gradient-to-br p-5 text-left shadow-2xl transition duration-300 hover:-translate-y-1 hover:shadow-blue-950/50 ${className}`}
+      className={`group relative flex min-h-[132px] flex-col justify-between overflow-hidden rounded-[1.75rem] border bg-gradient-to-br p-5 text-left shadow-2xl transition duration-300 hover:-translate-y-1 hover:shadow-blue-950/50 ${className}`}
     >
       <div className="absolute -right-8 -top-8 h-28 w-28 rounded-full bg-white/10 blur-2xl transition group-hover:bg-white/20" />
       <div className="relative z-10 flex items-start justify-between gap-4">
@@ -5612,7 +5612,7 @@ function DashboardActionCard({ icon, label, value, description, className, onCli
           {React.cloneElement(icon, { className: "w-7 h-7" })}
         </div>
       </div>
-      <div className="relative z-10 mt-5 flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-white/80">
+      <div className="relative z-10 mt-4 flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-white/80">
         Abrir módulo
         <span className="transition group-hover:translate-x-1">→</span>
       </div>
@@ -5640,9 +5640,9 @@ function ColorStatCard({ icon, label, value, color }) {
 
 function StatCard({ icon, label, value, className = "border-blue-500/25 bg-gradient-to-br from-blue-500/25 via-sky-600/15 to-slate-950", iconClassName = "bg-white/15 text-white border-white/20" }) {
   return (
-    <ColorCard className={`${className} transition duration-300 hover:-translate-y-0.5`}>
+    <ColorCard className={`${className} min-h-[132px] transition duration-300 hover:-translate-y-0.5`}>
       <div className="absolute -right-8 -top-8 h-24 w-24 rounded-full bg-white/10 blur-2xl" />
-      <CardContent className="relative z-10 p-5 flex items-center justify-between">
+      <CardContent className="relative z-10 h-full min-h-[132px] p-5 flex items-center justify-between">
         <div>
           <p className="text-white/85 text-sm font-black uppercase tracking-wide">{label}</p>
           <p className="text-3xl font-black mt-1 text-white">{value}</p>
