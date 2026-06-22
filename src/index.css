@@ -726,6 +726,69 @@ button[class*="bg-"] .text-violet-200 {
   stroke: currentColor;
 }
 
+.premium-card p.mb-4 + .space-y-3 > .rounded-full:first-child {
+  display: none;
+}
+
+.premium-card button .font-black,
+.premium-card button .text-white {
+  color: #172033 !important;
+}
+
+.premium-card button.bg-blue-500 .font-black,
+.premium-card button.bg-blue-500 .text-white,
+.premium-card button.bg-slate-800 .font-black,
+.premium-card button.bg-slate-800 .text-white,
+.premium-card button.bg-gradient-to-r .font-black,
+.premium-card button.bg-gradient-to-r .text-white {
+  color: #ffffff !important;
+}
+
+.app-shell.theme-oscuro {
+  background:
+    radial-gradient(circle at 15% 10%, rgba(37, 99, 235, 0.28), transparent 28%),
+    radial-gradient(circle at 85% 20%, rgba(14, 165, 233, 0.18), transparent 24%),
+    #07111f !important;
+}
+
+.app-shell.theme-oscuro .glass-panel,
+.app-shell.theme-oscuro .premium-card {
+  background: linear-gradient(135deg, rgba(15, 23, 42, .92), rgba(2, 6, 23, .88)) !important;
+  border-color: rgba(59, 130, 246, .24) !important;
+}
+
+.app-shell.theme-oscuro .premium-card h1,
+.app-shell.theme-oscuro .premium-card h2,
+.app-shell.theme-oscuro .premium-card h3,
+.app-shell.theme-oscuro .premium-card .text-white {
+  color: #f8fafc !important;
+}
+
+.app-shell.theme-oscuro .premium-card .text-slate-100,
+.app-shell.theme-oscuro .premium-card .text-slate-200,
+.app-shell.theme-oscuro .premium-card .text-slate-300,
+.app-shell.theme-oscuro .premium-card .text-slate-400 {
+  color: #cbd5e1 !important;
+}
+
+.app-shell.theme-oscuro input,
+.app-shell.theme-oscuro select,
+.app-shell.theme-oscuro textarea {
+  background: rgba(15, 23, 42, .82) !important;
+  border-color: rgba(59, 130, 246, .28) !important;
+  color: #f8fafc !important;
+}
+
+.app-shell.palette-pasteles .bg-gradient-to-br,
+.app-shell.palette-pasteles .bg-gradient-to-r {
+  filter: saturate(.78) brightness(1.08);
+}
+
+.app-shell.palette-premium .bg-gradient-to-br,
+.app-shell.palette-premium .bg-gradient-to-r {
+  filter: saturate(1.05) contrast(1.04);
+}
+
 .bg-blue-600,
 .bg-cyan-600,
 .bg-emerald-600,

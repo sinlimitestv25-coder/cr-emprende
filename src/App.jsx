@@ -696,6 +696,7 @@ function App() {
 
   function updateEmprendimientoSettings(updated) {
     setEmprendimientos((prev) => prev.map((e) => (e.id === updated.id ? updated : e)));
+    setSelectedEmpId(updated.id);
   }
 
   function sendMensaje(nuevo) {
@@ -882,7 +883,7 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen text-white flex bg-[#07111f]">
+    <div className={`min-h-screen text-white flex bg-[#07111f] app-shell ${!isAdmin ? `theme-${selectedEmp.apariencia || "claro"} palette-${selectedEmp.paleta || "vivos"}` : "theme-admin"}`}>
       <aside className="hidden md:flex w-72 glass-panel border-r border-blue-500/20 p-5 flex-col sticky top-0 h-screen overflow-y-auto">
         <SidebarBrand isAdmin={isAdmin} emp={selectedEmp} />
         <nav className="space-y-1.5 flex-1 pb-4">
@@ -985,12 +986,10 @@ function SidebarBrand({ isAdmin, emp }) {
 
   return (
     <div className="mb-8 rounded-[2rem] bg-gradient-to-br from-slate-900 to-slate-950 border border-blue-500/25 p-5 text-center shadow-2xl shadow-blue-900/20">
-      <div className="mx-auto h-24 w-24 rounded-[1.75rem] bg-blue-500/15 border border-blue-400/25 flex items-center justify-center overflow-hidden mb-4">
-        {isImageLogo ? <img src={emp.logo} alt={emp.nombre} className="h-full w-full object-cover" /> : <span className="text-3xl font-black text-sky-300">{emp?.logo || emp?.nombre?.slice(0,2) || "E"}</span>}
+      <div className="mx-auto h-36 w-36 rounded-[2rem] bg-blue-500/15 border border-blue-400/25 flex items-center justify-center overflow-hidden mb-4">
+        {isImageLogo ? <img src={emp.logo} alt={emp.nombre} className="h-full w-full object-cover" /> : <span className="text-5xl font-black text-sky-300">{emp?.logo || emp?.nombre?.slice(0,2) || "E"}</span>}
       </div>
       <p className="text-lg font-black text-white leading-tight">{emp?.nombre}</p>
-      <p className="text-xs text-sky-300 font-bold uppercase tracking-wide mt-2">{emp?.rubro}</p>
-      <p className="text-[11px] text-slate-300 mt-2">Panel personalizado</p>
     </div>
   );
 }
@@ -4629,7 +4628,7 @@ function ClienteFinanzas({ emp }) {
 }
 
 function ClienteConfiguracion({ emp, updateEmp, plan }) {
-  const [local, setLocal] = useState({ ...emp, apariencia: emp.apariencia || "oscuro", paleta: emp.paleta || "vivos" });
+  const [local, setLocal] = useState({ ...emp, apariencia: emp.apariencia || "claro", paleta: emp.paleta || "vivos" });
   function change(field, value) { setLocal((prev) => ({ ...prev, [field]: value })); }
   function toggleSupport(minutes) { setLocal((prev) => ({ ...prev, soporteRemoto: { habilitado: !prev.soporteRemoto.habilitado, vence: minutes } })); }
   const paletteOptions = [
@@ -4688,7 +4687,10 @@ function ClienteConfiguracion({ emp, updateEmp, plan }) {
 
         <Card>
           <CardContent className="p-5">
-            <h2 className="text-xl font-bold mb-4">Soporte remoto</h2>
+            <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <h2 className="text-xl font-bold">Soporte remoto</h2>
+              {plan?.accesoAdmin ? <StatusBadge label={local.soporteRemoto.habilitado ? `Habilitado · ${local.soporteRemoto.vence}` : "Deshabilitado"} tone={local.soporteRemoto.habilitado ? "success" : "danger"} /> : <StatusBadge label="No incluido en tu plan" tone="warning" />}
+            </div>
             <p className="text-sm text-slate-200 mb-4">Disponible para plan Elite. Por seguridad siempre queda deshabilitado hasta que vos lo habilites por tiempo limitado.</p>
             {plan?.accesoAdmin ? <div className="space-y-3"><StatusBadge label={local.soporteRemoto.habilitado ? `Habilitado · ${local.soporteRemoto.vence}` : "Deshabilitado"} tone={local.soporteRemoto.habilitado ? "success" : "danger"} /><div className="grid grid-cols-2 gap-2">{["15 min", "30 min", "1 hora", "24 horas"].map((m) => <Button key={m} onClick={() => toggleSupport(m)} className="bg-slate-800 text-white">{m}</Button>)}</div><Button onClick={() => updateEmp(local)} className="w-full bg-blue-500 text-black">Guardar acceso</Button></div> : <StatusBadge label="No incluido en tu plan" tone="warning" />}
           </CardContent>
