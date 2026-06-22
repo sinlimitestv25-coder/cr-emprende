@@ -888,25 +888,6 @@ function App() {
     );
   }
 
-  function updatePortalVisibility(empId, visible) {
-    const currentEmp = emprendimientos.find((emp) => emp.id === empId);
-    if (accountStatusLabel(currentEmp) !== "Activo") return;
-    setHistorialAdmin((prev) => [
-      {
-        id: `ADM-${Date.now().toString().slice(-6)}`,
-        adminId: "ADMIN-CR-001",
-        admin: "Super Administrador",
-        emprendimientoId: empId,
-        emprendimiento: currentEmp?.nombre || empId,
-        accion: visible ? "portal_activado" : "portal_ocultado",
-        detalle: `${currentEmp?.nombre || empId}: portal ${visible ? "visible" : "oculto"}`,
-        fecha: new Date().toLocaleString("es-AR", { dateStyle: "short", timeStyle: "short" }),
-      },
-      ...prev,
-    ]);
-    setEmprendimientos((prev) => prev.map((emp) => emp.id === empId ? { ...emp, portalVisible: visible } : emp));
-  }
-
   function sendMensaje(nuevo) {
     setMensajes((prev) => [
       {
@@ -1153,7 +1134,7 @@ function App() {
           {isAdmin && activePage === "usuarios" && <UsuariosPage usuarios={usuarios} emprendimientos={emprendimientos} onNewUser={() => setIsUserModalOpen(true)} onRenewUser={renewUser} onChangePassword={changeUserPassword} />}
           {isAdmin && activePage === "emprendimientos" && <EmprendimientosPage emprendimientos={filteredEmprendimientos} search={search} setSearch={setSearch} onNewBusiness={() => setIsBusinessWizardOpen(true)} onChangeAccountStatus={updateBusinessAccountStatus} setSelectedEmpId={setSelectedEmpId} setActivePage={setActivePage} />}
           {isAdmin && activePage === "suspendidos" && <SuspendidosPage emprendimientos={emprendimientos} onChangeAccountStatus={updateBusinessAccountStatus} />}
-          {isAdmin && activePage === "portales" && <PortalesAdminPage emprendimientos={emprendimientos} publicaciones={publicaciones} portalViews={portalViews} onUpdatePortalVisibility={updatePortalVisibility} />}
+          {isAdmin && activePage === "portales" && <PortalesAdminPage emprendimientos={emprendimientos} publicaciones={publicaciones} consultasPortal={consultasPortal} portalViews={portalViews} />}
           {isAdmin && activePage === "rubros" && <RubrosManagerPage rubros={rubros} modules={modulesBase} onChange={setRubros} />}
           {isAdmin && activePage === "modulos" && <ModulosPage modules={modulesBase} rubros={rubros} />}
           {isAdmin && activePage === "planes" && <PlanesPage planes={planes} />}
@@ -2294,18 +2275,20 @@ function HistorialAdminPage({ historial }) {
   );
 }
 
-function PortalesAdminPage({ emprendimientos, publicaciones, portalViews, onUpdatePortalVisibility }) {
+function PortalesAdminPage({ emprendimientos, publicaciones, consultasPortal, portalViews }) {
   const [copied, setCopied] = useState("");
   const rows = emprendimientos.map((emp) => {
     const status = accountStatusLabel(emp);
     const activePublications = publicaciones.filter((item) => item.emprendimientoId === emp.id && item.estado === "Visible").length;
     const totalPublications = publicaciones.filter((item) => item.emprendimientoId === emp.id).length;
-    const visible = status === "Activo" && emp.portalVisible !== false;
-    return { ...emp, status, visible, activePublications, totalPublications, views: Number(portalViews[emp.id] || 0) };
+    const consultas = consultasPortal.filter((item) => item.emprendimientoId === emp.id).length;
+    const visible = status === "Activo";
+    return { ...emp, status, visible, activePublications, totalPublications, consultas, views: Number(portalViews[emp.id] || 0) };
   });
   const visibles = rows.filter((row) => row.visible).length;
   const ocultos = rows.filter((row) => !row.visible).length;
   const totalPublicaciones = rows.reduce((acc, row) => acc + row.totalPublications, 0);
+  const totalConsultas = rows.reduce((acc, row) => acc + row.consultas, 0);
   const totalViews = rows.reduce((acc, row) => acc + row.views, 0);
 
   function portalLink(empId) {
@@ -2325,11 +2308,12 @@ function PortalesAdminPage({ emprendimientos, publicaciones, portalViews, onUpda
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Portales" subtitle="Control de portales publicos, publicaciones, visibilidad y links para compartir." />
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <PageHeader title="Portales" subtitle="Vista de control de portales publicos, publicaciones, consultas y links para compartir." />
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4">
         <StatCard icon={<Globe />} label="Visibles" value={visibles} className={statColorStyles.emerald.card} iconClassName={statColorStyles.emerald.icon} />
         <StatCard icon={<EyeOff />} label="Ocultos" value={ocultos} className={statColorStyles.rose.card} iconClassName={statColorStyles.rose.icon} />
         <StatCard icon={<Package />} label="Publicaciones" value={totalPublicaciones} className={statColorStyles.sky.card} iconClassName={statColorStyles.sky.icon} />
+        <StatCard icon={<MessageCircle />} label="Consultas" value={totalConsultas} className={statColorStyles.amber.card} iconClassName={statColorStyles.amber.icon} />
         <StatCard icon={<Eye />} label="Visitas" value={totalViews} className={statColorStyles.violet.card} iconClassName={statColorStyles.violet.icon} />
       </div>
 
@@ -2339,10 +2323,10 @@ function PortalesAdminPage({ emprendimientos, publicaciones, portalViews, onUpda
         <CardContent className="p-5 overflow-x-auto">
           <div className="mb-5">
             <h2 className="text-xl font-bold text-white">Portales por emprendedor</h2>
-            <p className="text-sm text-slate-300 mt-1">La cuenta suspendida o eliminada mantiene el portal oculto hasta reactivar la cuenta.</p>
+            <p className="text-sm text-slate-300 mt-1">La visibilidad es automatica: cuenta activa muestra portal, suspendida o eliminada lo oculta.</p>
           </div>
           <table className="w-full text-sm min-w-[1080px]">
-            <TableHead headers={["Emprendimiento", "Cuenta", "Portal", "Publicaciones", "Visitas", "Link", "Acciones"]} />
+            <TableHead headers={["Emprendimiento", "Cuenta", "Portal", "Publicaciones", "Consultas", "Visitas", "Link"]} />
             <tbody>
               {rows.map((emp) => (
                 <tr key={emp.id} className="border-b border-slate-800">
@@ -2353,24 +2337,12 @@ function PortalesAdminPage({ emprendimientos, publicaciones, portalViews, onUpda
                   <td className="py-4 pr-4"><StatusBadge label={emp.status} tone={accountStatusTone(emp)} /></td>
                   <td className="py-4 pr-4"><StatusBadge label={emp.visible ? "Visible" : "Oculto"} tone={emp.visible ? "success" : "danger"} /></td>
                   <td className="py-4 pr-4 text-slate-100">{emp.activePublications}/{emp.totalPublications}</td>
+                  <td className="py-4 pr-4 text-slate-100 font-black">{emp.consultas}</td>
                   <td className="py-4 pr-4 text-slate-100 font-black">{emp.views}</td>
                   <td className="py-4 pr-4">
                     <Button type="button" onClick={() => copyPortalLink(emp.id)} className="bg-blue-600 text-white px-3 py-2 text-xs">
                       <Copy className="w-3.5 h-3.5 mr-1" /> Copiar link
                     </Button>
-                  </td>
-                  <td className="py-4 pr-4">
-                    {emp.status !== "Activo" ? (
-                      <span className="text-xs font-bold text-slate-300">Reactivar cuenta primero</span>
-                    ) : (
-                      <div className="flex flex-wrap gap-2">
-                        {emp.visible ? (
-                          <Button type="button" onClick={() => onUpdatePortalVisibility(emp.id, false)} className="bg-red-600 text-white px-3 py-2 text-xs">Ocultar</Button>
-                        ) : (
-                          <Button type="button" onClick={() => onUpdatePortalVisibility(emp.id, true)} className="bg-emerald-600 text-white px-3 py-2 text-xs">Activar</Button>
-                        )}
-                      </div>
-                    )}
                   </td>
                 </tr>
               ))}
