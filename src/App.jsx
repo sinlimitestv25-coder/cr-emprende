@@ -2323,6 +2323,44 @@ function ConfiguracionAdminPage({ commissionSettings, onUpdateCommissionSettings
     ["Bonificado", "Habilita el plan sin sumar ingreso. Sirve para demos, acuerdos o casos especiales."],
     ["Horas de trabajo", "Mas adelante se cargan manualmente para conocer costo interno y ganancia real."],
   ];
+  const testChecklist = [
+    {
+      title: "Demo Reposteria",
+      icon: <Users />,
+      rows: [
+        ["Login", "Entrar como emprendedor demo."],
+        ["Productos", "Cargar y editar publicaciones."],
+        ["Imagenes", "Probar logo, banner y fotos comprimidas."],
+      ],
+    },
+    {
+      title: "Portal publico",
+      icon: <Globe />,
+      rows: [
+        ["Vista previa", "Abrir link publico y verificar visibilidad."],
+        ["Consulta", "Enviar consulta con WhatsApp."],
+        ["Metricas", "Confirmar visitas y consultas en Estadisticas."],
+      ],
+    },
+    {
+      title: "Control admin",
+      icon: <ShieldCheck />,
+      rows: [
+        ["Suspender", "Bloquea panel y oculta portal."],
+        ["Reactivar", "Recupera panel, productos y portal."],
+        ["Eliminar", "Marca cuenta eliminada manualmente."],
+      ],
+    },
+    {
+      title: "Datos para Supabase",
+      icon: <ClipboardList />,
+      rows: [
+        ["Historial", "Registrar acciones administrativas."],
+        ["Comisiones", "Confirmar venta y comision pendiente."],
+        ["Cache", "Validar portal sin duplicar lecturas."],
+      ],
+    },
+  ];
 
   return (
     <div className="space-y-6">
@@ -2340,6 +2378,21 @@ function ConfiguracionAdminPage({ commissionSettings, onUpdateCommissionSettings
         <RulesCard title="Reglas comerciales" icon={<DollarSign />} rows={commercialRules} />
         <RulesCard title="Reglas financieras" icon={<CreditCard />} rows={financeRules} />
       </div>
+
+      <Card>
+        <CardContent className="p-5">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
+            <div>
+              <h2 className="text-xl font-black text-white">Checklist de pruebas</h2>
+              <p className="text-sm text-slate-300 mt-1">Flujo recomendado antes de pasar estructura y datos a Supabase.</p>
+            </div>
+            <Badge>Pre-Supabase</Badge>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+            {testChecklist.map((section) => <RulesCard key={section.title} title={section.title} icon={section.icon} rows={section.rows} />)}
+          </div>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardContent className="p-5 space-y-4">
