@@ -789,6 +789,12 @@ button[class*="bg-"] .text-violet-200 {
   filter: saturate(1.05) contrast(1.04);
 }
 
+.premium-card button.bg-slate-800,
+.premium-card button.bg-slate-800.text-white,
+.premium-card button.bg-slate-800 svg {
+  color: #ffffff !important;
+}
+
 .bg-blue-600,
 .bg-cyan-600,
 .bg-emerald-600,
