@@ -1862,13 +1862,13 @@ function UserBusinessOnboarding({ user, rubros, onCreate }) {
               <InputField icon={<Globe />} label="Instagram / red social" value={form.instagram} onChange={(e) => change("instagram", e.target.value)} placeholder="Ej: @miemprendimiento" />
             </div>
             <InputField icon={<Palette />} label="Logo inicial o iniciales" value={form.logo} onChange={(e) => change("logo", e.target.value)} placeholder="Ej: JA" />
-            <div className="rounded-2xl border border-cyan-200/30 bg-cyan-400/15 p-4">
-              <p className="text-sm text-cyan-50">
+            <div className="rounded-2xl border border-sky-200 bg-sky-50/95 p-4">
+              <p className="text-sm font-semibold text-slate-600">
                 Al crear, se asignan los módulos de <b>{rubro?.nombre}</b> y queda lista la base para productos, insumos, recetas y portal.
               </p>
             </div>
-            <Button type="submit" className="w-full bg-gradient-to-r from-blue-600 via-sky-500 to-cyan-400 text-white uppercase tracking-[0.12em]">
-              Crear mi emprendimiento
+            <Button type="submit" className="w-full bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 text-white uppercase tracking-[0.12em] shadow-xl shadow-emerald-950/30">
+              CREAR MI EMPRENDIMIENTO
             </Button>
           </form>
         </div>
@@ -1990,7 +1990,7 @@ function LoginScreen({ email, setEmail, password, setPassword, error, onLogin })
           <div className="rounded-2xl border border-sky-300/20 bg-sky-500/10 p-4 shadow-inner shadow-sky-950/30">
             <p className="text-sm text-slate-100">Modo prototipo: los usuarios cargados entran con su email y contraseña temporal. El correo administrador de C&R entra al panel principal.</p>
           </div>
-          <Button type="submit" className="w-full rounded-2xl bg-gradient-to-r from-sky-400 via-cyan-300 to-emerald-300 text-slate-950 hover:scale-[1.01] py-6 font-black shadow-xl shadow-sky-950/30">Ingresar</Button>
+          <Button type="submit" className="w-full rounded-2xl bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400 text-slate-950 hover:scale-[1.01] py-6 font-black uppercase tracking-[0.14em] shadow-xl shadow-emerald-950/30">INGRESAR</Button>
           <Button type="button" onClick={() => {
             if (typeof window !== "undefined") window.location.href = getDemoAccessUrl();
           }} className="w-full rounded-2xl bg-white/10 border border-white/15 text-white py-4">
@@ -6874,8 +6874,8 @@ function StatCard({ icon, label, value, className = "border-blue-500/25 bg-gradi
 }
 function InfoItem({ label, value, highlight }) { return <div className="rounded-2xl bg-slate-950 border border-slate-800 p-4 mt-3"><p className="text-xs text-sky-300 font-bold uppercase tracking-wide mb-1">{label}</p><p className={`font-bold ${highlight ? "text-sky-300" : "text-white"}`}>{value}</p></div> }
 function ArchitectureRow({ icon, title, text }) { return <div className="flex gap-3 rounded-2xl bg-slate-950 border border-slate-800 p-3"><div className="text-sky-300 mt-0.5">{React.cloneElement(icon,{className:"w-5 h-5"})}</div><div><p className="font-bold text-white">{title}</p><p className="text-xs text-slate-100 mt-1">{text}</p></div></div> }
-function InputField({ icon, label, ...props }) { return <div><label className="block text-sm text-sky-200 font-black mb-2">{label}</label><div className="relative"><div className="absolute left-3 top-3.5 text-sky-100">{icon ? React.cloneElement(icon,{className:"w-4 h-4"}) : null}</div><input {...props} className="w-full pl-9 pr-3 py-3 rounded-xl bg-slate-950/90 border border-sky-300/25 text-white placeholder:text-slate-400 outline-none focus:border-sky-300" /></div></div> }
-function SelectField({ label, options, labels={}, ...props }) { return <div><label className="block text-sm text-sky-200 font-black mb-2">{label}</label><select {...props} className="w-full rounded-xl bg-slate-950/90 border border-sky-300/25 px-3 py-3 text-white outline-none focus:border-sky-300">{options.map(o=><option key={o} value={o}>{labels[o] || o}</option>)}</select></div> }
+function InputField({ icon, label, ...props }) { return <div><label className="block text-sm text-sky-100 font-black mb-2">{label}</label><div className="relative"><div className="absolute left-3 top-3.5 text-slate-500">{icon ? React.cloneElement(icon,{className:"w-4 h-4"}) : null}</div><input {...props} className="w-full pl-9 pr-3 py-3 rounded-xl bg-slate-50 border border-sky-200/70 text-slate-700 placeholder:text-slate-500 outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-300/30" /></div></div> }
+function SelectField({ label, options, labels={}, ...props }) { return <div><label className="block text-sm text-sky-100 font-black mb-2">{label}</label><select {...props} className="w-full rounded-xl bg-slate-50 border border-sky-200/70 px-3 py-3 text-slate-700 outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-300/30">{options.map(o=><option key={o} value={o}>{labels[o] || o}</option>)}</select></div> }
 function UserTableHead({ icon, label, center }) {
   return (
     <th className={`py-3 pr-3 whitespace-nowrap ${center ? "text-center" : ""}`}>
