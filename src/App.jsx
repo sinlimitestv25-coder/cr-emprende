@@ -1760,8 +1760,8 @@ function DemoAccessScreen({ emprendimientos, onStartDemo, onBack }) {
           </Button>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_.8fr] gap-5">
-          <Card>
+        <div className="grid grid-cols-1 lg:grid-cols-[.8fr_1fr] gap-5">
+          <Card className="order-2">
             <CardContent className="p-6 md:p-8 space-y-6">
               <div>
                 <p className="text-sm font-black uppercase tracking-[0.18em] text-sky-300">Elegí una base</p>
@@ -1791,16 +1791,16 @@ function DemoAccessScreen({ emprendimientos, onStartDemo, onBack }) {
                 <p className="text-sm text-slate-200 mt-1">{selected?.rubro} · {selected?.actividad}</p>
               </div>
 
-              <Button type="button" onClick={() => selected && onStartDemo(selected.id)} className="w-full rounded-2xl bg-gradient-to-r from-sky-400 via-cyan-300 to-emerald-300 text-slate-950 py-5 font-black">
-                Ingresar a demo por 3 horas
+              <Button type="button" onClick={() => selected && onStartDemo(selected.id)} className="w-full rounded-2xl bg-gradient-to-r from-blue-600 via-sky-500 to-cyan-400 text-white py-5 font-black uppercase tracking-[0.14em] shadow-xl shadow-blue-950/35">
+                INGRESAR A DEMO
               </Button>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="order-1">
             <CardContent className="p-6 md:p-8 space-y-5">
-              <div className="rounded-[1.75rem] bg-white p-5">
-                <img src="/logo-cr.png" alt="C&R Emprende" className="h-24 w-auto object-contain mx-auto" />
+              <div className="rounded-[1.75rem] bg-gradient-to-br from-sky-50 via-white to-emerald-50 p-5 shadow-xl shadow-cyan-950/20 border border-sky-200">
+                <img src="/logo-cr.png" alt="C&R Emprende" className="h-28 w-auto object-contain mx-auto" />
               </div>
               <div>
                 <h2 className="text-2xl font-black text-white">Sos emprendedor?</h2>
