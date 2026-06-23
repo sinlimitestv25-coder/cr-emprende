@@ -870,7 +870,7 @@ function getDemoAccessUrl() {
     .replace(/\/demoCR\/?$/i, "")
     .replace(/\/index\.html$/i, "")
     .replace(/\/$/, "");
-  return `${window.location.origin}${basePath}/demoCR`;
+  return `${window.location.origin}${basePath || ""}/#/demoCR`;
 }
 
 function getQrImageUrl(url, size = 220) {
@@ -891,7 +891,8 @@ function App() {
   const supportEmpIdFromUrl = supportParams?.get("soporte_emp") || null;
   const portalEmpIdFromUrl = supportParams?.get("portal") || null;
   const currentPath = typeof window !== "undefined" ? window.location.pathname : "";
-  const isDemoAccessFromUrl = supportParams?.get("demo") === "1" || /\/demoCR\/?$/i.test(currentPath);
+  const currentHash = typeof window !== "undefined" ? window.location.hash : "";
+  const isDemoAccessFromUrl = supportParams?.get("demo") === "1" || /\/demoCR\/?$/i.test(currentPath) || /^#\/demoCR\/?$/i.test(currentHash);
   const isSupportSession = Boolean(supportEmpIdFromUrl);
 
   const [isLoggedIn, setIsLoggedIn] = useState(isSupportSession);
