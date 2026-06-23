@@ -161,6 +161,7 @@ const emprendimientosIniciales = [
     fechaEliminacion: null,
     vencimiento: "30/06/2026",
     owner: "Rodrigo Jabones",
+    usuarioId: "USR-001",
     color: "Dorado",
     logo: "JR",
     whatsapp: "2974 292907",
@@ -183,6 +184,7 @@ const emprendimientosIniciales = [
     fechaEliminacion: null,
     vencimiento: "18/07/2026",
     owner: "Ana Repostería",
+    usuarioId: "USR-002",
     color: "Rosa pastel",
     logo: "DA",
     whatsapp: "2974 000111",
@@ -205,6 +207,7 @@ const emprendimientosIniciales = [
     fechaEliminacion: null,
     vencimiento: "20/07/2026",
     owner: "Demo Impresiones",
+    usuarioId: "USR-004",
     color: "Azul",
     logo: "GD",
     whatsapp: "2974 333555",
@@ -227,6 +230,7 @@ const emprendimientosIniciales = [
     fechaEliminacion: null,
     vencimiento: "20/07/2026",
     owner: "Demo Indumentaria",
+    usuarioId: "USR-005",
     color: "Violeta",
     logo: "MM",
     whatsapp: "2974 444666",
@@ -930,10 +934,10 @@ function App() {
   const [commissionSettings, setCommissionSettings] = useState(() => loadStoredValue(STORAGE_KEYS.commissionSettings, defaultCommissionSettings));
   const [portalCommissions, setPortalCommissions] = useState(() => loadStoredValue(STORAGE_KEYS.portalCommissions, []));
 
-  const selectedEmp = emprendimientos.find((e) => e.id === selectedEmpId) || emprendimientos[0];
   const isAdmin = loginRole === "Super Admin";
-  const selectedEmpStatus = accountStatusLabel(selectedEmp);
-  const isUserAccountBlocked = !isAdmin && (selectedEmpStatus === "Suspendido" || selectedEmpStatus === "Eliminado");
+  const selectedEmp = emprendimientos.find((e) => e.id === selectedEmpId) || (isAdmin ? emprendimientos[0] : null);
+  const selectedEmpStatus = selectedEmp ? accountStatusLabel(selectedEmp) : "Sin emprendimiento";
+  const isUserAccountBlocked = !isAdmin && (!selectedEmp || selectedEmpStatus === "Suspendido" || selectedEmpStatus === "Eliminado");
 
   const filteredEmprendimientos = useMemo(() => {
     const term = search.toLowerCase();
@@ -1063,6 +1067,9 @@ function App() {
     setActivePage(detectedRole === "Super Admin" ? "dashboard" : "mi-panel");
     if (matchedUser?.emprendimientoIds?.length) {
       setSelectedEmpId(matchedUser.emprendimientoIds[0]);
+    } else if (matchedUser) {
+      const linkedEmp = emprendimientos.find((emp) => emp.usuarioId === matchedUser.id);
+      setSelectedEmpId(linkedEmp?.id || "__SIN_EMPRENDIMIENTO__");
     }
   }
 
@@ -1116,6 +1123,50 @@ function App() {
   function updateEmprendimientoSettings(updated) {
     setEmprendimientos((prev) => prev.map((e) => (e.id === updated.id ? updated : e)));
     setSelectedEmpId(updated.id);
+  }
+
+  function createBusinessFromUser(payload) {
+    if (!currentUser) return;
+    const rubro = rubros.find((item) => item.id === payload.rubroId) || rubros.find((item) => item.nombre === currentUser.rubro) || rubros[0];
+    const newId = `EMP-${Date.now().toString().slice(-4)}`;
+    const nuevo = {
+      id: newId,
+      nombre: payload.nombre || "Nuevo emprendimiento",
+      rubroId: rubro.id,
+      rubro: rubro.nombre,
+      actividad: payload.actividad || rubro.actividades?.[0] || "Sin actividad",
+      plan: currentUser.plan === "Demo" ? "Demo" : currentUser.plan || "Basico",
+      periodo: currentUser.periodicidad || "Mensual",
+      estadoPago: currentUser.estadoPago || "Pendiente",
+      fechaAlta: new Date().toLocaleDateString("es-AR"),
+      estado: "Activo",
+      portalVisible: true,
+      fechaSuspension: null,
+      fechaEliminacion: null,
+      vencimiento: currentUser.renovadoHasta || new Date().toLocaleDateString("es-AR"),
+      owner: currentUser.nombre,
+      usuarioId: currentUser.id,
+      color: "Dorado",
+      logo: payload.logo || (payload.nombre || "NE").slice(0, 2).toUpperCase(),
+      whatsapp: payload.whatsapp || currentUser.telefono || "",
+      instagram: payload.instagram || "",
+      modulos: rubro.modulos,
+      soporteRemoto: { habilitado: false, vence: null },
+    };
+    setEmprendimientos((prev) => [nuevo, ...prev]);
+    setUsuarios((prev) => prev.map((user) => user.id === currentUser.id ? {
+      ...user,
+      emprendimientoIds: Array.from(new Set([...(user.emprendimientoIds || []), newId])),
+      rubro: rubro.nombre,
+    } : user));
+    setCurrentUser((prev) => prev ? {
+      ...prev,
+      emprendimientoIds: Array.from(new Set([...(prev.emprendimientoIds || []), newId])),
+      rubro: rubro.nombre,
+    } : prev);
+    setSelectedEmpId(newId);
+    setActivePage("mi-panel");
+    setShowWelcome(true);
   }
 
   function updateBusinessAccountStatus(empId, status) {
@@ -1352,7 +1403,7 @@ function App() {
   }
 
   return (
-    <div className={`min-h-screen text-white flex bg-[#07111f] app-shell ${!isAdmin ? `theme-${selectedEmp.apariencia || "claro"} palette-${selectedEmp.paleta || "vivos"}` : "theme-admin"}`}>
+    <div className={`min-h-screen text-white flex bg-[#07111f] app-shell ${!isAdmin ? `theme-${selectedEmp?.apariencia || "claro"} palette-${selectedEmp?.paleta || "vivos"}` : "theme-admin"}`}>
       <aside className="hidden md:flex w-72 glass-panel border-r border-blue-500/20 p-5 flex-col sticky top-0 h-screen overflow-y-auto">
         <SidebarBrand isAdmin={isAdmin} emp={selectedEmp} />
         <nav className="space-y-1.5 flex-1 pb-4">
@@ -1394,7 +1445,7 @@ function App() {
         <div className="mt-auto rounded-2xl bg-blue-500/10 border border-blue-500/20 p-4">
           <p className="text-sm font-bold text-sky-300">Sesión</p>
           <p className="text-xs text-slate-200 mt-1">Rol: {loginRole}</p>
-          {!isAdmin && <p className="text-xs text-slate-300 mt-1">ID: {selectedEmp.id}</p>}
+          {!isAdmin && <p className="text-xs text-slate-300 mt-1">ID: {selectedEmp?.id || "Sin emprendimiento"}</p>}
           {!isAdmin && currentUser?.demo && <DemoCountdownCard remainingMs={demoRemainingMs} expiresOn={currentUser.demoExpiraOn} />}
           <Button onClick={handleLogout} className="w-full mt-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-white">
             <LogOut className="w-4 h-4 mr-2" /> Salir
@@ -1431,7 +1482,11 @@ function App() {
           {isAdmin && activePage === "historial" && <HistorialAdminPage historial={historialAdmin} />}
           {isAdmin && activePage === "configuracion-admin" && <ConfiguracionAdminPage commissionSettings={commissionSettings} onUpdateCommissionSettings={updateCommissionSettings} demoUrl={getDemoAccessUrl()} />}
 
-          {!isAdmin && isUserAccountBlocked && <BlockedAccountNotice emp={selectedEmp} />}
+          {!isAdmin && isUserAccountBlocked && (
+            selectedEmp
+              ? <BlockedAccountNotice emp={selectedEmp} />
+              : <UserBusinessOnboarding user={currentUser} rubros={rubros} onCreate={createBusinessFromUser} />
+          )}
           {!isAdmin && !isUserAccountBlocked && activePage === "mi-panel" && <ClienteDashboard emp={selectedEmp} setActivePage={setActivePage} />}
           {!isAdmin && !isUserAccountBlocked && activePage === "productos" && <ClienteProductos emp={selectedEmp} />}
           {!isAdmin && !isUserAccountBlocked && activePage === "insumos" && <ClienteInsumos emp={selectedEmp} />}
@@ -1454,7 +1509,21 @@ function App() {
       {showDemoExpired && !isAdmin && expiredDemoUser && <DemoExpiredModal user={expiredDemoUser} onClose={closeDemoExpired} />}
       {showWelcome && !isAdmin && !isUserAccountBlocked && <WelcomeModal emp={selectedEmp} onClose={() => setShowWelcome(false)} onMessages={() => { setShowWelcome(false); setActivePage("mensajes"); }} />}
       {!isAdmin && !isUserAccountBlocked && currentUser && commissionSettings.updatedAt && (currentUser.commissionNoticeVersion || 0) < commissionSettings.version && <CommissionNoticeModal settings={commissionSettings} onClose={() => markCommissionNoticeSeen(currentUser.id)} />}
-      {isBusinessWizardOpen && <BusinessWizard rubros={rubros} planes={planes} modules={modulesBase} onClose={() => setIsBusinessWizardOpen(false)} onCreate={(nuevo) => { setEmprendimientos((prev) => [nuevo, ...prev]); setIsBusinessWizardOpen(false); setActivePage("emprendimientos"); }} />}
+      {isBusinessWizardOpen && <BusinessWizard rubros={rubros} planes={planes} modules={modulesBase} usuarios={usuarios} onClose={() => setIsBusinessWizardOpen(false)} onCreate={(nuevo, usuarioId) => {
+        setEmprendimientos((prev) => [nuevo, ...prev]);
+        if (usuarioId) {
+          setUsuarios((prev) => prev.map((user) => user.id === usuarioId ? {
+            ...user,
+            emprendimientoIds: Array.from(new Set([...(user.emprendimientoIds || []), nuevo.id])),
+            rubro: nuevo.rubro,
+            plan: nuevo.plan,
+            estadoPago: nuevo.estadoPago,
+            renovadoHasta: nuevo.vencimiento,
+          } : user));
+        }
+        setIsBusinessWizardOpen(false);
+        setActivePage("emprendimientos");
+      }} />}
       {isUserModalOpen && <UsuarioModal rubros={rubros} planes={planes} onClose={() => setIsUserModalOpen(false)} onCreate={(nuevo) => { setUsuarios((prev) => [nuevo, ...prev]); setIsUserModalOpen(false); }} />}
     </div>
   );
@@ -1586,7 +1655,7 @@ function MobileTopNav({ isAdmin, emp, activePage, setActivePage, currentUser, de
               )}
             </div>
             <div className="min-w-0">
-              <p className="text-xs font-black uppercase tracking-wide text-sky-300">{isAdmin ? "Admin C&R" : emp?.nombre}</p>
+              <p className="text-xs font-black uppercase tracking-wide text-sky-300">{isAdmin ? "Admin C&R" : emp?.nombre || "Sin emprendimiento"}</p>
               <p className="text-sm font-black text-white truncate">{activeLabel}</p>
             </div>
           </div>
@@ -1614,7 +1683,7 @@ function MobileTopNav({ isAdmin, emp, activePage, setActivePage, currentUser, de
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <p className="text-xs font-black uppercase tracking-[0.18em] text-sky-300">{isAdmin ? "Panel administrador" : "Panel emprendedor"}</p>
-                <h2 className="text-xl font-black text-white mt-1 truncate">{isAdmin ? "C&R Emprende" : emp?.nombre}</h2>
+                <h2 className="text-xl font-black text-white mt-1 truncate">{isAdmin ? "C&R Emprende" : emp?.nombre || "Sin emprendimiento"}</h2>
               </div>
               <Button type="button" onClick={() => setIsOpen(false)} className="rounded-xl bg-slate-800 text-white px-3 py-2">
                 <X className="w-4 h-4" />
@@ -1654,6 +1723,26 @@ function MobileTopNav({ isAdmin, emp, activePage, setActivePage, currentUser, de
 }
 
 function BlockedAccountNotice({ emp }) {
+  if (!emp) {
+    return (
+      <div className="min-h-[70vh] flex items-center justify-center">
+        <div className="w-full max-w-3xl rounded-[2rem] border border-blue-200 bg-blue-50 p-7 shadow-2xl shadow-blue-900/10">
+          <div className="flex flex-col md:flex-row md:items-start gap-5">
+            <div className="w-16 h-16 rounded-3xl bg-blue-600 border border-blue-700 text-white flex items-center justify-center">
+              <Building2 className="w-8 h-8" />
+            </div>
+            <div className="flex-1">
+              <p className="text-xs font-black uppercase tracking-[0.16em] text-blue-700">Cuenta sin emprendimiento</p>
+              <h1 className="text-3xl font-black text-slate-950 mt-2">Todavia no hay emprendimiento vinculado</h1>
+              <p className="text-slate-700 font-semibold mt-3">
+                Tu usuario existe, pero falta asociarlo a un emprendimiento. C&R Emprende debe vincular tu usuario ID con el emprendimiento correspondiente.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
   const status = accountStatusLabel(emp);
   const suspendedDays = getSuspendedDays(emp);
   const isDeleted = status === "Eliminado";
@@ -1686,6 +1775,90 @@ function BlockedAccountNotice({ emp }) {
               </div>
             )}
           </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function UserBusinessOnboarding({ user, rubros, onCreate }) {
+  const defaultRubro = rubros.find((rubro) => rubro.nombre === user?.rubro) || rubros[0];
+  const [form, setForm] = useState({
+    nombre: "",
+    rubroId: defaultRubro?.id || "",
+    actividad: defaultRubro?.actividades?.[0] || "",
+    whatsapp: user?.telefono || "",
+    instagram: "",
+    logo: "",
+  });
+  const rubro = rubros.find((item) => item.id === form.rubroId) || defaultRubro || rubros[0];
+
+  function change(field, value) {
+    if (field === "rubroId") {
+      const nextRubro = rubros.find((item) => item.id === value) || rubros[0];
+      setForm((prev) => ({
+        ...prev,
+        rubroId: value,
+        actividad: nextRubro?.actividades?.[0] || "",
+      }));
+      return;
+    }
+    setForm((prev) => ({ ...prev, [field]: value }));
+  }
+
+  function submit(event) {
+    event.preventDefault();
+    if (!form.nombre.trim()) return;
+    onCreate({
+      ...form,
+      nombre: form.nombre.trim(),
+      actividad: form.actividad || rubro?.actividades?.[0] || "Sin actividad",
+    });
+  }
+
+  return (
+    <div className="min-h-[70vh] flex items-center justify-center">
+      <div className="w-full max-w-5xl rounded-[2rem] border border-blue-500/20 bg-slate-950/80 p-5 md:p-7 shadow-2xl shadow-blue-950/25">
+        <div className="grid grid-cols-1 lg:grid-cols-[.85fr_1.15fr] gap-5">
+          <div className="rounded-[1.75rem] border border-blue-500/20 bg-blue-500/10 p-5">
+            <p className="text-xs font-black uppercase tracking-[0.18em] text-sky-300">Primer ingreso</p>
+            <h1 className="text-3xl font-black text-white mt-2">Creá tu emprendimiento</h1>
+            <p className="text-sm text-slate-200 mt-3">
+              Tu usuario ya está dado de alta. Ahora falta crear la actividad para vincular tu usuario ID con tu emprendimiento y cargar la base correcta.
+            </p>
+            <div className="mt-5 space-y-3">
+              <InfoItem label="Usuario ID" value={user?.id || "Sin ID"} />
+              <InfoItem label="Rubro asignado" value={user?.rubro || rubro?.nombre || "Pendiente"} highlight />
+              <InfoItem label="Plan" value={user?.plan || "Pendiente"} />
+            </div>
+            <div className="mt-5 rounded-2xl border border-sky-300/20 bg-sky-500/10 p-4">
+              <p className="text-xs font-black uppercase tracking-wide text-sky-300">Ejemplos del rubro</p>
+              <p className="text-sm text-slate-100 mt-2">{rubro?.ejemplos || "Elegí la actividad más cercana a tu emprendimiento."}</p>
+            </div>
+          </div>
+
+          <form onSubmit={submit} className="rounded-[1.75rem] border border-white/10 bg-slate-900/80 p-5 space-y-4">
+            <div>
+              <h2 className="text-xl font-black text-white">Datos de la actividad</h2>
+              <p className="text-sm text-slate-300 mt-1">Estos datos crean el emprendimiento y lo vinculan a tu usuario.</p>
+            </div>
+            <InputField icon={<Building2 />} label="Nombre del emprendimiento" value={form.nombre} onChange={(e) => change("nombre", e.target.value)} placeholder="Ej: Jabones de Ana" required />
+            <SelectField label="Rubro" value={form.rubroId} onChange={(e) => change("rubroId", e.target.value)} options={rubros.map((item) => item.id)} labels={Object.fromEntries(rubros.map((item) => [item.id, item.nombre]))} />
+            <SelectField label="Actividad / subrubro" value={form.actividad} onChange={(e) => change("actividad", e.target.value)} options={rubro?.actividades || []} />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <InputField icon={<Phone />} label="WhatsApp" value={form.whatsapp} onChange={(e) => change("whatsapp", e.target.value)} placeholder="Ej: 2974 000000" />
+              <InputField icon={<Globe />} label="Instagram / red social" value={form.instagram} onChange={(e) => change("instagram", e.target.value)} placeholder="Ej: @miemprendimiento" />
+            </div>
+            <InputField icon={<Palette />} label="Logo inicial o iniciales" value={form.logo} onChange={(e) => change("logo", e.target.value)} placeholder="Ej: JA" />
+            <div className="rounded-2xl border border-emerald-300/20 bg-emerald-500/10 p-4">
+              <p className="text-sm text-emerald-100">
+                Al crear, se asignan los módulos de <b>{rubro?.nombre}</b> y queda lista la base para productos, insumos, recetas y portal.
+              </p>
+            </div>
+            <Button type="submit" className="w-full bg-gradient-to-r from-blue-600 via-sky-500 to-cyan-400 text-white uppercase tracking-[0.12em]">
+              Crear mi emprendimiento
+            </Button>
+          </form>
         </div>
       </div>
     </div>
@@ -2626,7 +2799,10 @@ function EmprendimientosPage({ emprendimientos, search, setSearch, onNewBusiness
                     <p className="font-bold text-white">{e.nombre}</p>
                     <p className="text-xs text-slate-400">{e.actividad || "Sin actividad"} - Alta: {e.fechaAlta || "Pendiente"}</p>
                   </td>
-                  <td className="py-3 pr-4 text-slate-200 whitespace-nowrap">{e.owner}</td>
+                  <td className="py-3 pr-4 text-slate-200 whitespace-nowrap">
+                    {e.owner}
+                    <p className="text-xs text-sky-300">{e.usuarioId || "Sin usuario ID"}</p>
+                  </td>
                   <td className="py-3 pr-4"><Badge>{e.rubro}</Badge></td>
                   <td className="py-3 pr-4">
                     <div className="flex flex-col gap-1 items-start">
@@ -2664,6 +2840,7 @@ function EmprendimientosPage({ emprendimientos, search, setSearch, onNewBusiness
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <InfoItem label="ID" value={selected.id} />
               <InfoItem label="Usuario / responsable" value={selected.owner} />
+              <InfoItem label="Usuario ID" value={selected.usuarioId || "Sin vincular"} />
               <InfoItem label="Rubro" value={selected.rubro} highlight />
               <InfoItem label="Actividad" value={selected.actividad || "Sin actividad"} />
               <InfoItem label="Plan contratado" value={selected.plan} highlight />
@@ -6342,7 +6519,7 @@ function ClienteMensajesPage({ emp, mensajes, onSend }) {
   );
 }
 
-function BusinessWizard({ rubros, planes, onClose, onCreate }) {
+function BusinessWizard({ rubros, planes, usuarios = [], onClose, onCreate }) {
   const [step, setStep] = useState(1);
   const [form, setForm] = useState({
     nombre: "",
@@ -6352,6 +6529,7 @@ function BusinessWizard({ rubros, planes, onClose, onCreate }) {
     periodicidad: "Mensual",
     estadoPago: "Pendiente",
     owner: "",
+    usuarioId: "",
     vencimiento: todayISO(),
     whatsapp: "",
     instagram: "",
@@ -6360,6 +6538,7 @@ function BusinessWizard({ rubros, planes, onClose, onCreate }) {
   });
   const rubro = rubros.find((r) => r.id === form.rubroId) || rubros[0];
   const planSeleccionado = planes.find((p) => p.nombre === form.plan) || planes[0];
+  const usuariosDisponibles = usuarios.filter((user) => user.estado !== "Eliminado");
 
   function change(field, value) {
     setForm((prev) => {
@@ -6367,13 +6546,25 @@ function BusinessWizard({ rubros, planes, onClose, onCreate }) {
         const nuevoRubro = rubros.find((r) => r.id === value) || rubros[0];
         return { ...prev, rubroId: value, actividad: nuevoRubro?.actividades?.[0] || "" };
       }
+      if (field === "usuarioId") {
+        const selectedUser = usuarios.find((user) => user.id === value);
+        return {
+          ...prev,
+          usuarioId: value,
+          owner: selectedUser?.nombre || prev.owner,
+          whatsapp: selectedUser?.telefono || prev.whatsapp,
+          plan: selectedUser?.plan && selectedUser.plan !== "Demo" ? selectedUser.plan : prev.plan,
+          estadoPago: selectedUser?.estadoPago || prev.estadoPago,
+        };
+      }
       return { ...prev, [field]: value };
     });
   }
 
   function create() {
+    const newId = `EMP-${Date.now().toString().slice(-4)}`;
     onCreate({
-      id: `EMP-${Date.now().toString().slice(-4)}`,
+      id: newId,
       nombre: form.nombre || "Nuevo emprendimiento",
       rubroId: rubro.id,
       rubro: rubro.nombre,
@@ -6388,13 +6579,14 @@ function BusinessWizard({ rubros, planes, onClose, onCreate }) {
       fechaEliminacion: null,
       vencimiento: isoToEsDate(form.vencimiento),
       owner: form.owner || "Sin dueño",
+      usuarioId: form.usuarioId || null,
       color: form.color,
       logo: form.logo || (form.nombre || "NE").slice(0,2).toUpperCase(),
       whatsapp: form.whatsapp,
       instagram: form.instagram,
       modulos: rubro.modulos,
       soporteRemoto: { habilitado: false, vence: null },
-    });
+    }, form.usuarioId);
   }
 
   return (
@@ -6404,6 +6596,7 @@ function BusinessWizard({ rubros, planes, onClose, onCreate }) {
 
         {step===1 && (
           <div className="space-y-4">
+            <SelectField label="Usuario responsable" value={form.usuarioId} onChange={(e)=>change("usuarioId", e.target.value)} options={["", ...usuariosDisponibles.map((user) => user.id)]} labels={{ "": "Sin vincular todavia", ...Object.fromEntries(usuariosDisponibles.map((user) => [user.id, `${user.nombre} - ${user.id}`])) }} />
             <InputField icon={<Building2 />} label="Nombre del emprendimiento" value={form.nombre} onChange={(e)=>change("nombre", e.target.value)} placeholder="Ej: Buba Cook" />
             <InputField icon={<Users />} label="Dueño / responsable" value={form.owner} onChange={(e)=>change("owner", e.target.value)} placeholder="Nombre y apellido" />
             <InputField icon={<Phone />} label="WhatsApp" value={form.whatsapp} onChange={(e)=>change("whatsapp", e.target.value)} placeholder="Ej: 2974 000000" />
@@ -6440,6 +6633,7 @@ function BusinessWizard({ rubros, planes, onClose, onCreate }) {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <InfoItem label="Emprendimiento" value={form.nombre || "Pendiente"} />
             <InfoItem label="Dueño" value={form.owner || "Pendiente"} />
+            <InfoItem label="Usuario ID" value={form.usuarioId || "Sin vincular"} />
             <InfoItem label="Rubro" value={rubro.nombre} highlight />
             <InfoItem label="Actividad" value={form.actividad || "Pendiente"} />
             <InfoItem label="Plan" value={form.plan} highlight />
