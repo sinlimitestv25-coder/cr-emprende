@@ -21,6 +21,7 @@ import {
   LogIn,
   LogOut,
   MessageCircle,
+  Menu,
   Mail,
   Send,
   Package,
@@ -1528,44 +1529,127 @@ const clientMobileNavItems = [
 ];
 
 function MobileTopNav({ isAdmin, emp, activePage, setActivePage, currentUser, demoRemainingMs, onLogout }) {
+  const [isOpen, setIsOpen] = useState(false);
   const items = isAdmin ? adminMobileNavItems : clientMobileNavItems;
   const activeLabel = items.find(([id]) => id === activePage)?.[1] || "Panel";
   const isImageLogo = !isAdmin && emp?.logo && (emp.logo.startsWith("http") || emp.logo.startsWith("/") || emp.logo.startsWith("data:"));
 
+  function goToPage(pageId) {
+    setActivePage(pageId);
+    setIsOpen(false);
+  }
+
+  function iconForPage(pageId) {
+    const icons = {
+      dashboard: <LayoutDashboard />,
+      usuarios: <Users />,
+      emprendimientos: <Building2 />,
+      suspendidos: <AlertTriangle />,
+      estadisticas: <LayoutDashboard />,
+      rubros: <Boxes />,
+      modulos: <Settings />,
+      planes: <CreditCard />,
+      suscripciones: <DollarSign />,
+      soporte: <ShieldCheck />,
+      historial: <ClipboardList />,
+      "configuracion-admin": <Settings />,
+      "mi-panel": <LayoutDashboard />,
+      productos: <Package />,
+      insumos: <Boxes />,
+      proveedores: <Building2 />,
+      recetas: <ClipboardList />,
+      clientes: <Users />,
+      exhibicion: <Eye />,
+      presupuestos: <CreditCard />,
+      pedidos: <ShoppingBag />,
+      finanzas: <DollarSign />,
+      reportes: <LayoutDashboard />,
+      whatsapp: <MessageCircle />,
+      mensajes: <Mail />,
+      configuracion: <Palette />,
+    };
+    return icons[pageId] || <LayoutDashboard />;
+  }
+
   return (
-    <div className="md:hidden sticky top-0 z-40 -mx-4 -mt-4 mb-2 border-b border-blue-500/20 bg-slate-950/95 px-4 py-3 shadow-xl shadow-slate-950/30 backdrop-blur-xl">
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-3 min-w-0">
-          <div className="h-12 w-12 rounded-2xl bg-white border border-blue-500/20 flex items-center justify-center overflow-hidden shrink-0">
-            {isAdmin ? (
-              <img src="/logo-cr.png" alt="C&R Emprende" className="h-10 w-10 object-contain" />
-            ) : isImageLogo ? (
-              <img src={emp.logo} alt={emp.nombre} className="h-full w-full object-cover" />
-            ) : (
-              <span className="text-sm font-black text-blue-950">{emp?.logo || "CR"}</span>
-            )}
+    <>
+      <div className="md:hidden sticky top-0 z-40 -mx-4 -mt-4 mb-2 border-b border-blue-500/20 bg-slate-950/95 px-4 py-3 shadow-xl shadow-slate-950/30 backdrop-blur-xl">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="h-12 w-12 rounded-2xl bg-white border border-blue-500/20 flex items-center justify-center overflow-hidden shrink-0">
+              {isAdmin ? (
+                <img src="/logo-cr.png" alt="C&R Emprende" className="h-10 w-10 object-contain" />
+              ) : isImageLogo ? (
+                <img src={emp.logo} alt={emp.nombre} className="h-full w-full object-cover" />
+              ) : (
+                <span className="text-sm font-black text-blue-950">{emp?.logo || "CR"}</span>
+              )}
+            </div>
+            <div className="min-w-0">
+              <p className="text-xs font-black uppercase tracking-wide text-sky-300">{isAdmin ? "Admin C&R" : emp?.nombre}</p>
+              <p className="text-sm font-black text-white truncate">{activeLabel}</p>
+            </div>
           </div>
-          <div className="min-w-0">
-            <p className="text-xs font-black uppercase tracking-wide text-sky-300">{isAdmin ? "Admin C&R" : emp?.nombre}</p>
-            <p className="text-sm font-black text-white truncate">{activeLabel}</p>
+          <div className="flex items-center gap-2">
+            <Button type="button" onClick={() => setIsOpen(true)} className="rounded-xl bg-blue-500 text-slate-950 px-3 py-2">
+              <Menu className="w-4 h-4 mr-1" /> Menú
+            </Button>
+            <Button type="button" onClick={onLogout} className="rounded-xl bg-slate-800 text-white px-3 py-2">
+              <LogOut className="w-4 h-4" />
+            </Button>
           </div>
         </div>
-        <Button type="button" onClick={onLogout} className="rounded-xl bg-slate-800 text-white px-3 py-2">
-          <LogOut className="w-4 h-4" />
-        </Button>
-      </div>
-      <div className="mt-3 grid grid-cols-[1fr_auto] gap-2">
-        <select value={activePage} onChange={(event) => setActivePage(event.target.value)} className="w-full rounded-2xl border border-blue-500/25 bg-slate-900 px-3 py-3 text-sm font-bold text-white outline-none focus:border-sky-300">
-          {items.map(([id, label]) => <option key={id} value={id}>{label}</option>)}
-        </select>
         {!isAdmin && currentUser?.demo && (
-          <div className="rounded-2xl border border-cyan-300/20 bg-cyan-500/10 px-3 py-2 text-right">
-            <p className="text-[10px] font-black uppercase tracking-wide text-cyan-200">Demo</p>
+          <div className="mt-3 rounded-2xl border border-cyan-300/20 bg-cyan-500/10 px-3 py-2 flex items-center justify-between">
+            <p className="text-[10px] font-black uppercase tracking-wide text-cyan-200">Demo activo</p>
             <p className="text-sm font-black tabular-nums text-white">{formatRemaining(demoRemainingMs)}</p>
           </div>
         )}
       </div>
-    </div>
+
+      {isOpen && (
+        <div className="md:hidden fixed inset-0 z-50">
+          <button type="button" aria-label="Cerrar menu" onClick={() => setIsOpen(false)} className="absolute inset-0 bg-black/65 backdrop-blur-sm" />
+          <aside className="relative z-10 h-full w-[86vw] max-w-[340px] glass-panel border-r border-blue-500/25 bg-slate-950 p-4 shadow-2xl shadow-black/50 overflow-y-auto">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-xs font-black uppercase tracking-[0.18em] text-sky-300">{isAdmin ? "Panel administrador" : "Panel emprendedor"}</p>
+                <h2 className="text-xl font-black text-white mt-1 truncate">{isAdmin ? "C&R Emprende" : emp?.nombre}</h2>
+              </div>
+              <Button type="button" onClick={() => setIsOpen(false)} className="rounded-xl bg-slate-800 text-white px-3 py-2">
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+
+            <div className="mt-4 rounded-2xl bg-blue-500/10 border border-blue-500/20 p-3">
+              <p className="text-xs font-black uppercase tracking-wide text-sky-300">Sección actual</p>
+              <p className="text-sm font-black text-white mt-1">{activeLabel}</p>
+              {!isAdmin && currentUser?.demo && <p className="text-xs text-cyan-200 mt-2">Demo: {formatRemaining(demoRemainingMs)}</p>}
+            </div>
+
+            <nav className="mt-4 space-y-1.5 pb-4">
+              {items.map(([id, label]) => (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => goToPage(id)}
+                  className={`w-full flex items-center gap-3 rounded-2xl px-4 py-3 text-left text-sm font-black transition ${activePage === id ? "bg-blue-500 text-slate-950 shadow-lg shadow-blue-950/25" : "text-slate-100 bg-slate-900/70 border border-white/5 hover:border-sky-300/40"}`}
+                >
+                  {React.cloneElement(iconForPage(id), { className: "w-5 h-5 flex-shrink-0" })}
+                  <span className="min-w-0 truncate">{label}</span>
+                </button>
+              ))}
+            </nav>
+
+            <div className="sticky bottom-0 -mx-4 border-t border-blue-500/20 bg-slate-950/95 p-4 backdrop-blur-xl">
+              <Button type="button" onClick={() => setIsOpen(false)} className="w-full bg-slate-800 text-white">
+                Ocultar menú
+              </Button>
+            </div>
+          </aside>
+        </div>
+      )}
+    </>
   );
 }
 
