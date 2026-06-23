@@ -27,6 +27,8 @@ import {
   Palette,
   Phone,
   Plus,
+  Printer,
+  QrCode,
   RefreshCw,
   Search,
   Settings,
@@ -859,10 +861,32 @@ const demoDurationOptions = [
   { value: 1440, label: "24 horas" },
 ];
 
+const qrDemoDurationMinutes = 180;
+const qrDemoBaseIds = ["EMP-001", "EMP-002", "EMP-003", "EMP-004"];
+
+function getDemoAccessUrl() {
+  if (typeof window === "undefined") return "?demo=1";
+  return `${window.location.origin}${window.location.pathname}?demo=1`;
+}
+
+function getQrImageUrl(url, size = 220) {
+  return `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(url)}`;
+}
+
+function getDemoBaseLabel(emp) {
+  if (!emp) return "Demo";
+  if (emp.id === "EMP-001") return "Demo Artesanias / Jabones";
+  if (emp.id === "EMP-002") return "Demo Gastronomia / Reposteria";
+  if (emp.id === "EMP-003") return "Demo Impresiones / Grafica";
+  if (emp.id === "EMP-004") return "Demo Indumentaria / Reventa";
+  return `Demo ${emp.rubro || emp.nombre}`;
+}
+
 function App() {
   const supportParams = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
   const supportEmpIdFromUrl = supportParams?.get("soporte_emp") || null;
   const portalEmpIdFromUrl = supportParams?.get("portal") || null;
+  const isDemoAccessFromUrl = supportParams?.get("demo") === "1";
   const isSupportSession = Boolean(supportEmpIdFromUrl);
 
   const [isLoggedIn, setIsLoggedIn] = useState(isSupportSession);
@@ -1033,6 +1057,39 @@ function App() {
     if (matchedUser?.emprendimientoIds?.length) {
       setSelectedEmpId(matchedUser.emprendimientoIds[0]);
     }
+  }
+
+  function startQrDemo(empId) {
+    const emp = emprendimientos.find((item) => item.id === empId) || emprendimientos[0];
+    const baseUser = usuarios.find((item) => item.emprendimientoIds?.includes(emp.id)) || usuarios[0];
+    const demoExpiresOn = addMinutesFromNow(qrDemoDurationMinutes);
+    const demoUser = {
+      ...baseUser,
+      id: `QR-DEMO-${emp.id}`,
+      nombre: getDemoBaseLabel(emp),
+      email: `demo-${emp.id.toLowerCase()}@cremprende.com`,
+      rol: "Dueno",
+      plan: "Demo",
+      estadoPago: "Bonificado",
+      emprendimientoIds: [emp.id],
+      demo: true,
+      demoDuracionMinutos: qrDemoDurationMinutes,
+      demoDuracionLabel: "3 horas",
+      demoExpiraOn: demoExpiresOn,
+      renovadoHasta: formatDateTime(demoExpiresOn),
+      commissionNoticeVersion: commissionSettings.version,
+    };
+
+    setLoginError("");
+    setCurrentUser(demoUser);
+    setDemoRemainingMs(getRemainingMs(demoExpiresOn));
+    setLoginRole("Dueno");
+    setSelectedEmpId(emp.id);
+    setIsLoggedIn(true);
+    setShowWelcome(true);
+    setShowDemoExpired(false);
+    setExpiredDemoUser(null);
+    setActivePage("mi-panel");
   }
 
   function handleLogout() {
@@ -1267,6 +1324,17 @@ function App() {
     );
   }
 
+  if (!isLoggedIn && isDemoAccessFromUrl) {
+    return (
+      <>
+        <DemoAccessScreen emprendimientos={emprendimientos} onStartDemo={startQrDemo} onBack={() => {
+          if (typeof window !== "undefined") window.location.href = window.location.pathname;
+        }} />
+        {showDemoExpired && expiredDemoUser && <DemoExpiredModal user={expiredDemoUser} onClose={closeDemoExpired} />}
+      </>
+    );
+  }
+
   if (!isLoggedIn) {
     return (
       <>
@@ -1345,7 +1413,7 @@ function App() {
           {isAdmin && activePage === "soporte" && <SoporteAdminPage emprendimientos={emprendimientos} setSelectedEmpId={setSelectedEmpId} setActivePage={setActivePage} />}
           {isAdmin && activePage === "mensajes" && <MensajesAdminPage mensajes={mensajes} emprendimientos={emprendimientos} onReply={replyMensaje} />}
           {isAdmin && activePage === "historial" && <HistorialAdminPage historial={historialAdmin} />}
-          {isAdmin && activePage === "configuracion-admin" && <ConfiguracionAdminPage commissionSettings={commissionSettings} onUpdateCommissionSettings={updateCommissionSettings} />}
+          {isAdmin && activePage === "configuracion-admin" && <ConfiguracionAdminPage commissionSettings={commissionSettings} onUpdateCommissionSettings={updateCommissionSettings} demoUrl={getDemoAccessUrl()} />}
 
           {!isAdmin && isUserAccountBlocked && <BlockedAccountNotice emp={selectedEmp} />}
           {!isAdmin && !isUserAccountBlocked && activePage === "mi-panel" && <ClienteDashboard emp={selectedEmp} setActivePage={setActivePage} />}
@@ -1564,7 +1632,98 @@ function LoginScreen({ email, setEmail, password, setPassword, error, onLogin })
             <p className="text-sm text-slate-100">Modo prototipo: los usuarios cargados entran con su email y contraseña temporal. El correo administrador de C&R entra al panel principal.</p>
           </div>
           <Button type="submit" className="w-full rounded-2xl bg-gradient-to-r from-sky-400 via-cyan-300 to-emerald-300 text-slate-950 hover:scale-[1.01] py-6 font-black shadow-xl shadow-sky-950/30">Ingresar</Button>
+          <Button type="button" onClick={() => {
+            if (typeof window !== "undefined") window.location.href = getDemoAccessUrl();
+          }} className="w-full rounded-2xl bg-white/10 border border-white/15 text-white py-4">
+            <QrCode className="w-4 h-4 mr-2" /> Probar demo
+          </Button>
         </form>
+      </div>
+    </div>
+  );
+}
+
+function DemoAccessScreen({ emprendimientos, onStartDemo, onBack }) {
+  const demoBases = qrDemoBaseIds
+    .map((id) => emprendimientos.find((emp) => emp.id === id))
+    .filter(Boolean);
+  const [selectedId, setSelectedId] = useState(demoBases[0]?.id || "");
+
+  const selected = demoBases.find((emp) => emp.id === selectedId) || demoBases[0];
+
+  return (
+    <div className="min-h-screen text-white bg-slate-950 p-4 md:p-8 relative overflow-hidden" style={{ backgroundImage: "linear-gradient(rgba(2,6,23,.72), rgba(2,6,23,.92)), url('/fondo-saas.png')", backgroundSize: "cover", backgroundPosition: "center" }}>
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_15%,rgba(14,165,233,.24),transparent_32%)]" />
+      <div className="relative z-10 mx-auto max-w-6xl space-y-6">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <div className="rounded-2xl bg-white p-3 shadow-xl shadow-blue-950/30">
+              <img src="/logo-cr.png" alt="C&R Emprende" className="h-16 w-auto object-contain" />
+            </div>
+            <div>
+              <p className="text-xs font-black uppercase tracking-[0.24em] text-cyan-200">Demo emprendedor</p>
+              <h1 className="text-3xl md:text-5xl font-black mt-1">Probá C&R Emprende</h1>
+            </div>
+          </div>
+          <Button type="button" onClick={onBack} className="bg-slate-800 text-white border border-white/10">
+            <ArrowLeft className="w-4 h-4 mr-2" /> Volver al ingreso
+          </Button>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_.8fr] gap-5">
+          <Card>
+            <CardContent className="p-6 md:p-8 space-y-6">
+              <div>
+                <p className="text-sm font-black uppercase tracking-[0.18em] text-sky-300">Elegí una base</p>
+                <h2 className="text-2xl md:text-3xl font-black text-white mt-2">Entrá con datos precargados por rubro</h2>
+                <p className="text-slate-200 mt-3">La demo dura 3 horas. Vas a poder recorrer panel, productos, insumos, recetas, clientes, exhibición y portal según el rubro elegido.</p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {demoBases.map((emp) => {
+                  const active = selected?.id === emp.id;
+                  return (
+                    <button key={emp.id} type="button" onClick={() => setSelectedId(emp.id)} className={`rounded-3xl border p-4 text-left transition ${active ? "border-cyan-300 bg-cyan-500/15 shadow-xl shadow-cyan-950/20" : "border-white/10 bg-slate-950/70 hover:border-sky-300/40"}`}>
+                      <p className="text-white font-black">{getDemoBaseLabel(emp)}</p>
+                      <p className="text-sm text-slate-300 mt-1">{emp.nombre}</p>
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        <Badge>{emp.actividad}</Badge>
+                        <Badge>{emp.plan}</Badge>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="rounded-3xl border border-blue-500/20 bg-blue-500/10 p-5">
+                <p className="text-xs font-black uppercase tracking-wide text-sky-300">Base seleccionada</p>
+                <h3 className="text-xl font-black text-white mt-2">{selected?.nombre}</h3>
+                <p className="text-sm text-slate-200 mt-1">{selected?.rubro} · {selected?.actividad}</p>
+              </div>
+
+              <Button type="button" onClick={() => selected && onStartDemo(selected.id)} className="w-full rounded-2xl bg-gradient-to-r from-sky-400 via-cyan-300 to-emerald-300 text-slate-950 py-5 font-black">
+                Ingresar a demo por 3 horas
+              </Button>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-6 md:p-8 space-y-5">
+              <div className="rounded-[1.75rem] bg-white p-5">
+                <img src="/logo-cr.png" alt="C&R Emprende" className="h-24 w-auto object-contain mx-auto" />
+              </div>
+              <div>
+                <h2 className="text-2xl font-black text-white">Sos emprendedor?</h2>
+                <p className="text-slate-200 mt-3 leading-relaxed">Te ayudamos a ordenar productos, costos, stock, clientes, presupuestos y tu portal de exhibición para vender con más control.</p>
+              </div>
+              <div className="space-y-3">
+                <ArchitectureRow icon={<Package />} title="Productos y stock" text="Probá productos, costos y precios de venta sugeridos." />
+                <ArchitectureRow icon={<Globe />} title="Portal público" text="Mostrá publicaciones y recibí consultas con WhatsApp." />
+                <ArchitectureRow icon={<Clock />} title="Demo temporal" text="Acceso de 3 horas, con cierre automático al vencer." />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );
@@ -2479,7 +2638,7 @@ function HistorialAdminPage({ historial }) {
   );
 }
 
-function ConfiguracionAdminPage({ commissionSettings, onUpdateCommissionSettings }) {
+function ConfiguracionAdminPage({ commissionSettings, onUpdateCommissionSettings, demoUrl }) {
   const [localCommission, setLocalCommission] = useState({
     porcentaje: commissionSettings.porcentaje,
     limiteMensual: commissionSettings.limiteMensual,
@@ -2497,6 +2656,18 @@ function ConfiguracionAdminPage({ commissionSettings, onUpdateCommissionSettings
       porcentaje: Number(localCommission.porcentaje || 0),
       limiteMensual: Number(localCommission.limiteMensual || 0),
     });
+  }
+
+  async function copyDemoUrl() {
+    try {
+      await navigator.clipboard.writeText(demoUrl);
+    } catch {
+      // Clipboard can fail on insecure origins; the visible URL remains available.
+    }
+  }
+
+  function printDemoQr() {
+    if (typeof window !== "undefined") window.print();
   }
 
   const accountRules = [
@@ -2573,6 +2744,37 @@ function ConfiguracionAdminPage({ commissionSettings, onUpdateCommissionSettings
         <StatCard icon={<Package />} label="Limite portal" value={PORTAL_PUBLICATION_LIMIT} className={statColorStyles.sky.card} iconClassName={statColorStyles.sky.icon} />
         <StatCard icon={<DollarSign />} label="Comision" value={`${commissionSettings.porcentaje}%`} className={statColorStyles.violet.card} iconClassName={statColorStyles.violet.icon} />
       </div>
+
+      <Card>
+        <CardContent className="p-5">
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_260px] gap-5 items-start">
+            <div className="space-y-4">
+              <div>
+                <p className="text-xs font-black uppercase tracking-[0.2em] text-cyan-300">QR de captacion</p>
+                <h2 className="text-xl font-black text-white mt-1">Demo para emprendedores</h2>
+                <p className="text-sm text-slate-300 mt-2">Este link abre una pantalla publica donde la persona elige rubro y entra a una demo de 3 horas con datos precargados.</p>
+              </div>
+              <div className="rounded-2xl border border-blue-500/20 bg-slate-950 p-4">
+                <p className="text-xs font-black uppercase tracking-wide text-sky-300">Link demo</p>
+                <p className="text-sm text-slate-100 mt-2 break-all">{demoUrl}</p>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <Button type="button" onClick={copyDemoUrl} className="bg-blue-500 text-black">
+                  <Copy className="w-4 h-4 mr-2" /> Copiar link
+                </Button>
+                <Button type="button" onClick={printDemoQr} className="bg-slate-800 text-white border border-white/10">
+                  <Printer className="w-4 h-4 mr-2" /> Imprimir QR
+                </Button>
+              </div>
+            </div>
+            <div className="rounded-3xl bg-white p-5 text-center text-slate-950 shadow-xl">
+              <img src={getQrImageUrl(demoUrl)} alt="QR demo C&R Emprende" className="mx-auto h-52 w-52 object-contain" />
+              <p className="mt-3 text-sm font-black">Escaneá y probá C&R Emprende</p>
+              <p className="text-xs text-slate-600 mt-1">Demo guiada por rubro · 3 horas</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
         <RulesCard title="Estados de cuenta" icon={<Users />} rows={accountRules} />
