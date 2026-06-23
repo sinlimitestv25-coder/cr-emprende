@@ -866,7 +866,11 @@ const qrDemoBaseIds = ["EMP-001", "EMP-002", "EMP-003", "EMP-004"];
 
 function getDemoAccessUrl() {
   if (typeof window === "undefined") return "?demo=1";
-  return `${window.location.origin}${window.location.pathname}?demo=1`;
+  const basePath = window.location.pathname
+    .replace(/\/demoCR\/?$/i, "")
+    .replace(/\/index\.html$/i, "")
+    .replace(/\/$/, "");
+  return `${window.location.origin}${basePath}/demoCR`;
 }
 
 function getQrImageUrl(url, size = 220) {
@@ -886,7 +890,8 @@ function App() {
   const supportParams = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
   const supportEmpIdFromUrl = supportParams?.get("soporte_emp") || null;
   const portalEmpIdFromUrl = supportParams?.get("portal") || null;
-  const isDemoAccessFromUrl = supportParams?.get("demo") === "1";
+  const currentPath = typeof window !== "undefined" ? window.location.pathname : "";
+  const isDemoAccessFromUrl = supportParams?.get("demo") === "1" || /\/demoCR\/?$/i.test(currentPath);
   const isSupportSession = Boolean(supportEmpIdFromUrl);
 
   const [isLoggedIn, setIsLoggedIn] = useState(isSupportSession);
@@ -1328,7 +1333,7 @@ function App() {
     return (
       <>
         <DemoAccessScreen emprendimientos={emprendimientos} onStartDemo={startQrDemo} onBack={() => {
-          if (typeof window !== "undefined") window.location.href = window.location.pathname;
+          if (typeof window !== "undefined") window.location.href = window.location.pathname.replace(/\/demoCR\/?$/i, "/");
         }} />
         {showDemoExpired && expiredDemoUser && <DemoExpiredModal user={expiredDemoUser} onClose={closeDemoExpired} />}
       </>
@@ -1397,6 +1402,15 @@ function App() {
 
       <main className="flex-1 p-4 md:p-8 overflow-x-hidden">
         <div className="w-full space-y-6">
+          <MobileTopNav
+            isAdmin={isAdmin}
+            emp={selectedEmp}
+            activePage={activePage}
+            setActivePage={setActivePage}
+            currentUser={currentUser}
+            demoRemainingMs={demoRemainingMs}
+            onLogout={handleLogout}
+          />
           {!isAdmin && currentUser?.demo && <DemoCountdownBanner remainingMs={demoRemainingMs} expiresOn={currentUser.demoExpiraOn} />}
           {isSupportSession && <SupportSessionBanner emp={selectedEmp} />}
           {!isAdmin && !isSupportSession && selectedEmp?.soporteRemoto?.habilitado && <ClientSupportActiveBanner emp={selectedEmp} />}
@@ -1475,6 +1489,81 @@ function DemoCountdownCard({ remainingMs, expiresOn }) {
       </div>
       <p className={`mt-2 text-2xl font-black tabular-nums ${isEndingSoon ? "text-amber-300" : "text-cyan-200"}`}>{formatRemaining(remainingMs)}</p>
       <p className="mt-1 text-[11px] leading-snug text-slate-300">Finaliza {formatDateTime(expiresOn)}</p>
+    </div>
+  );
+}
+
+const adminMobileNavItems = [
+  ["dashboard", "Dashboard"],
+  ["usuarios", "Usuarios"],
+  ["emprendimientos", "Emprendimientos"],
+  ["suspendidos", "Suspendidos"],
+  ["estadisticas", "Estadisticas"],
+  ["rubros", "Rubros"],
+  ["modulos", "Modulos"],
+  ["planes", "Planes"],
+  ["suscripciones", "Finanzas"],
+  ["soporte", "Soporte remoto"],
+  ["mensajes", "Mensajes"],
+  ["historial", "Historial"],
+  ["configuracion-admin", "Configuracion"],
+];
+
+const clientMobileNavItems = [
+  ["mi-panel", "Mi panel"],
+  ["productos", "Productos"],
+  ["insumos", "Insumos"],
+  ["proveedores", "Proveedores"],
+  ["recetas", "Produccion / Recetas"],
+  ["clientes", "Clientes"],
+  ["exhibicion", "Exhibicion"],
+  ["presupuestos", "Presupuestos"],
+  ["pedidos", "Pedidos"],
+  ["finanzas", "Finanzas"],
+  ["reportes", "Reportes"],
+  ["whatsapp", "WhatsApp"],
+  ["mensajes", "Mensajes"],
+  ["configuracion", "Configuracion"],
+];
+
+function MobileTopNav({ isAdmin, emp, activePage, setActivePage, currentUser, demoRemainingMs, onLogout }) {
+  const items = isAdmin ? adminMobileNavItems : clientMobileNavItems;
+  const activeLabel = items.find(([id]) => id === activePage)?.[1] || "Panel";
+  const isImageLogo = !isAdmin && emp?.logo && (emp.logo.startsWith("http") || emp.logo.startsWith("/") || emp.logo.startsWith("data:"));
+
+  return (
+    <div className="md:hidden sticky top-0 z-40 -mx-4 -mt-4 mb-2 border-b border-blue-500/20 bg-slate-950/95 px-4 py-3 shadow-xl shadow-slate-950/30 backdrop-blur-xl">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="h-12 w-12 rounded-2xl bg-white border border-blue-500/20 flex items-center justify-center overflow-hidden shrink-0">
+            {isAdmin ? (
+              <img src="/logo-cr.png" alt="C&R Emprende" className="h-10 w-10 object-contain" />
+            ) : isImageLogo ? (
+              <img src={emp.logo} alt={emp.nombre} className="h-full w-full object-cover" />
+            ) : (
+              <span className="text-sm font-black text-blue-950">{emp?.logo || "CR"}</span>
+            )}
+          </div>
+          <div className="min-w-0">
+            <p className="text-xs font-black uppercase tracking-wide text-sky-300">{isAdmin ? "Admin C&R" : emp?.nombre}</p>
+            <p className="text-sm font-black text-white truncate">{activeLabel}</p>
+          </div>
+        </div>
+        <Button type="button" onClick={onLogout} className="rounded-xl bg-slate-800 text-white px-3 py-2">
+          <LogOut className="w-4 h-4" />
+        </Button>
+      </div>
+      <div className="mt-3 grid grid-cols-[1fr_auto] gap-2">
+        <select value={activePage} onChange={(event) => setActivePage(event.target.value)} className="w-full rounded-2xl border border-blue-500/25 bg-slate-900 px-3 py-3 text-sm font-bold text-white outline-none focus:border-sky-300">
+          {items.map(([id, label]) => <option key={id} value={id}>{label}</option>)}
+        </select>
+        {!isAdmin && currentUser?.demo && (
+          <div className="rounded-2xl border border-cyan-300/20 bg-cyan-500/10 px-3 py-2 text-right">
+            <p className="text-[10px] font-black uppercase tracking-wide text-cyan-200">Demo</p>
+            <p className="text-sm font-black tabular-nums text-white">{formatRemaining(demoRemainingMs)}</p>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
