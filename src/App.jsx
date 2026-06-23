@@ -1128,13 +1128,14 @@ function App() {
   function createBusinessFromUser(payload) {
     if (!currentUser) return;
     const rubro = rubros.find((item) => item.id === payload.rubroId) || rubros.find((item) => item.nombre === currentUser.rubro) || rubros[0];
+    const actividadFinal = payload.nuevaActividad || payload.actividad || rubro.actividades?.[0] || "Sin actividad";
     const newId = `EMP-${Date.now().toString().slice(-4)}`;
     const nuevo = {
       id: newId,
       nombre: payload.nombre || "Nuevo emprendimiento",
       rubroId: rubro.id,
       rubro: rubro.nombre,
-      actividad: payload.actividad || rubro.actividades?.[0] || "Sin actividad",
+      actividad: actividadFinal,
       plan: currentUser.plan === "Demo" ? "Demo" : currentUser.plan || "Basico",
       periodo: currentUser.periodicidad || "Mensual",
       estadoPago: currentUser.estadoPago || "Pendiente",
@@ -1153,6 +1154,12 @@ function App() {
       modulos: rubro.modulos,
       soporteRemoto: { habilitado: false, vence: null },
     };
+    if (payload.nuevaActividad?.trim()) {
+      setRubros((prev) => prev.map((item) => item.id === rubro.id ? {
+        ...item,
+        actividades: Array.from(new Set([...(item.actividades || []), payload.nuevaActividad.trim()])),
+      } : item));
+    }
     setEmprendimientos((prev) => [nuevo, ...prev]);
     setUsuarios((prev) => prev.map((user) => user.id === currentUser.id ? {
       ...user,
@@ -1787,6 +1794,7 @@ function UserBusinessOnboarding({ user, rubros, onCreate }) {
     nombre: "",
     rubroId: defaultRubro?.id || "",
     actividad: defaultRubro?.actividades?.[0] || "",
+    nuevaActividad: "",
     whatsapp: user?.telefono || "",
     instagram: "",
     logo: "",
@@ -1800,6 +1808,7 @@ function UserBusinessOnboarding({ user, rubros, onCreate }) {
         ...prev,
         rubroId: value,
         actividad: nextRubro?.actividades?.[0] || "",
+        nuevaActividad: "",
       }));
       return;
     }
@@ -1812,7 +1821,8 @@ function UserBusinessOnboarding({ user, rubros, onCreate }) {
     onCreate({
       ...form,
       nombre: form.nombre.trim(),
-      actividad: form.actividad || rubro?.actividades?.[0] || "Sin actividad",
+      nuevaActividad: form.nuevaActividad.trim(),
+      actividad: form.nuevaActividad.trim() || form.actividad || rubro?.actividades?.[0] || "Sin actividad",
     });
   }
 
@@ -1837,21 +1847,23 @@ function UserBusinessOnboarding({ user, rubros, onCreate }) {
             </div>
           </div>
 
-          <form onSubmit={submit} className="rounded-[1.75rem] border border-white/10 bg-slate-900/80 p-5 space-y-4">
+          <form onSubmit={submit} className="rounded-[1.75rem] border border-sky-300/25 bg-gradient-to-br from-blue-950 via-sky-950 to-cyan-950 p-5 space-y-4 shadow-2xl shadow-blue-950/30">
             <div>
               <h2 className="text-xl font-black text-white">Datos de la actividad</h2>
-              <p className="text-sm text-slate-300 mt-1">Estos datos crean el emprendimiento y lo vinculan a tu usuario.</p>
+              <p className="text-sm text-sky-100 mt-1">Estos datos crean el emprendimiento y lo vinculan a tu usuario.</p>
             </div>
             <InputField icon={<Building2 />} label="Nombre del emprendimiento" value={form.nombre} onChange={(e) => change("nombre", e.target.value)} placeholder="Ej: Jabones de Ana" required />
             <SelectField label="Rubro" value={form.rubroId} onChange={(e) => change("rubroId", e.target.value)} options={rubros.map((item) => item.id)} labels={Object.fromEntries(rubros.map((item) => [item.id, item.nombre]))} />
             <SelectField label="Actividad / subrubro" value={form.actividad} onChange={(e) => change("actividad", e.target.value)} options={rubro?.actividades || []} />
+            <InputField icon={<Plus />} label="Nueva actividad / subrubro" value={form.nuevaActividad} onChange={(e) => change("nuevaActividad", e.target.value)} placeholder="Ej: Libreria y anillado" />
+            <p className="text-xs font-semibold text-sky-100 -mt-2">Si cargás una nueva actividad, se usa para tu emprendimiento y queda registrada dentro del rubro para futuras altas.</p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <InputField icon={<Phone />} label="WhatsApp" value={form.whatsapp} onChange={(e) => change("whatsapp", e.target.value)} placeholder="Ej: 2974 000000" />
               <InputField icon={<Globe />} label="Instagram / red social" value={form.instagram} onChange={(e) => change("instagram", e.target.value)} placeholder="Ej: @miemprendimiento" />
             </div>
             <InputField icon={<Palette />} label="Logo inicial o iniciales" value={form.logo} onChange={(e) => change("logo", e.target.value)} placeholder="Ej: JA" />
-            <div className="rounded-2xl border border-emerald-300/20 bg-emerald-500/10 p-4">
-              <p className="text-sm text-emerald-100">
+            <div className="rounded-2xl border border-cyan-200/30 bg-cyan-400/15 p-4">
+              <p className="text-sm text-cyan-50">
                 Al crear, se asignan los módulos de <b>{rubro?.nombre}</b> y queda lista la base para productos, insumos, recetas y portal.
               </p>
             </div>
@@ -6862,8 +6874,8 @@ function StatCard({ icon, label, value, className = "border-blue-500/25 bg-gradi
 }
 function InfoItem({ label, value, highlight }) { return <div className="rounded-2xl bg-slate-950 border border-slate-800 p-4 mt-3"><p className="text-xs text-sky-300 font-bold uppercase tracking-wide mb-1">{label}</p><p className={`font-bold ${highlight ? "text-sky-300" : "text-white"}`}>{value}</p></div> }
 function ArchitectureRow({ icon, title, text }) { return <div className="flex gap-3 rounded-2xl bg-slate-950 border border-slate-800 p-3"><div className="text-sky-300 mt-0.5">{React.cloneElement(icon,{className:"w-5 h-5"})}</div><div><p className="font-bold text-white">{title}</p><p className="text-xs text-slate-100 mt-1">{text}</p></div></div> }
-function InputField({ icon, label, ...props }) { return <div><label className="block text-sm text-sky-300 font-semibold mb-2">{label}</label><div className="relative"><div className="absolute left-3 top-3.5 text-slate-100">{icon ? React.cloneElement(icon,{className:"w-4 h-4"}) : null}</div><input {...props} className="w-full pl-9 pr-3 py-3 rounded-xl bg-slate-950 border border-slate-700 outline-none focus:border-sky-300" /></div></div> }
-function SelectField({ label, options, labels={}, ...props }) { return <div><label className="block text-sm text-sky-300 font-semibold mb-2">{label}</label><select {...props} className="w-full rounded-xl bg-slate-950 border border-slate-700 px-3 py-3 outline-none focus:border-sky-300">{options.map(o=><option key={o} value={o}>{labels[o] || o}</option>)}</select></div> }
+function InputField({ icon, label, ...props }) { return <div><label className="block text-sm text-sky-200 font-black mb-2">{label}</label><div className="relative"><div className="absolute left-3 top-3.5 text-sky-100">{icon ? React.cloneElement(icon,{className:"w-4 h-4"}) : null}</div><input {...props} className="w-full pl-9 pr-3 py-3 rounded-xl bg-slate-950/90 border border-sky-300/25 text-white placeholder:text-slate-400 outline-none focus:border-sky-300" /></div></div> }
+function SelectField({ label, options, labels={}, ...props }) { return <div><label className="block text-sm text-sky-200 font-black mb-2">{label}</label><select {...props} className="w-full rounded-xl bg-slate-950/90 border border-sky-300/25 px-3 py-3 text-white outline-none focus:border-sky-300">{options.map(o=><option key={o} value={o}>{labels[o] || o}</option>)}</select></div> }
 function UserTableHead({ icon, label, center }) {
   return (
     <th className={`py-3 pr-3 whitespace-nowrap ${center ? "text-center" : ""}`}>
