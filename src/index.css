@@ -1040,3 +1040,248 @@ table tbody tr:hover {
     min-height: 44px;
   }
 }
+
+/* Ajuste compacto + marca azul */
+:root {
+  --cr-primary: #1d4ed8;
+  --cr-primary-soft: #2563eb;
+  --cr-primary-dark: #1e3a8a;
+}
+
+body {
+  font-size: 14px;
+}
+
+.cr-start-logo {
+  width: min(260px, 72vw);
+  aspect-ratio: 1.72 / 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: .18rem;
+  border-radius: 18px;
+  background:
+    linear-gradient(145deg, #2563eb 0%, #1d4ed8 48%, #1e3a8a 100%);
+  color: #ffffff;
+  box-shadow:
+    0 18px 36px rgba(29, 78, 216, .26),
+    inset 0 1px 0 rgba(255, 255, 255, .22);
+  border: 1px solid rgba(255, 255, 255, .18);
+}
+
+.cr-start-logo-main {
+  color: #ffffff;
+  font-size: clamp(3rem, 7vw, 5.4rem);
+  line-height: .88;
+  font-weight: 950;
+  letter-spacing: 0 !important;
+}
+
+.cr-start-logo-sub {
+  color: #ffffff;
+  font-size: clamp(1.2rem, 2.6vw, 2rem);
+  line-height: 1;
+  font-weight: 900;
+  text-transform: lowercase;
+  letter-spacing: .04em !important;
+}
+
+.text-3xl {
+  font-size: 1.55rem !important;
+}
+
+.text-4xl {
+  font-size: 2rem !important;
+}
+
+.text-5xl {
+  font-size: 2.65rem !important;
+}
+
+.text-2xl {
+  font-size: 1.35rem !important;
+}
+
+.text-xl {
+  font-size: 1.08rem !important;
+}
+
+.text-lg {
+  font-size: 1rem !important;
+}
+
+.p-10 {
+  padding: 2rem !important;
+}
+
+.p-8 {
+  padding: 1.7rem !important;
+}
+
+.p-7 {
+  padding: 1.55rem !important;
+}
+
+.p-6 {
+  padding: 1.25rem !important;
+}
+
+.p-5 {
+  padding: 1rem !important;
+}
+
+.p-4 {
+  padding: .85rem !important;
+}
+
+.px-5 {
+  padding-left: 1rem !important;
+  padding-right: 1rem !important;
+}
+
+.py-6 {
+  padding-top: .9rem !important;
+  padding-bottom: .9rem !important;
+}
+
+.py-5 {
+  padding-top: .85rem !important;
+  padding-bottom: .85rem !important;
+}
+
+.py-4 {
+  padding-top: .75rem !important;
+  padding-bottom: .75rem !important;
+}
+
+.gap-5 {
+  gap: 1rem !important;
+}
+
+.gap-4 {
+  gap: .85rem !important;
+}
+
+.space-y-6 > :not([hidden]) ~ :not([hidden]) {
+  margin-top: 1.15rem !important;
+}
+
+.space-y-5 > :not([hidden]) ~ :not([hidden]) {
+  margin-top: 1rem !important;
+}
+
+.space-y-4 > :not([hidden]) ~ :not([hidden]) {
+  margin-top: .85rem !important;
+}
+
+.space-y-3 > :not([hidden]) ~ :not([hidden]) {
+  margin-top: .65rem !important;
+}
+
+button,
+.premium-button,
+button.bg-blue-500,
+button.bg-blue-500\/10,
+button.bg-blue-500\/15,
+button.bg-blue-500\/20,
+button.bg-slate-800,
+button.bg-green-500,
+button.bg-emerald-500,
+button.bg-emerald-500\/15,
+button.bg-emerald-500\/20,
+button.bg-violet-500,
+button.bg-violet-500\/15,
+button.bg-violet-500\/20,
+button.bg-red-500,
+button.bg-red-500\/10,
+button.bg-red-500\/15,
+button.bg-red-500\/20,
+button.bg-orange-500,
+button.bg-amber-500,
+button.bg-gradient-to-r {
+  min-height: 38px;
+  border-radius: 10px !important;
+  background: linear-gradient(135deg, var(--cr-primary-soft), var(--cr-primary)) !important;
+  border: 1px solid rgba(30, 64, 175, .28) !important;
+  color: #ffffff !important;
+  font-size: .86rem !important;
+  font-weight: 850 !important;
+  letter-spacing: 0 !important;
+  box-shadow: 0 10px 20px rgba(29, 78, 216, .18) !important;
+}
+
+button *,
+button svg,
+button .text-white,
+button .text-slate-950,
+button .text-black {
+  color: #ffffff !important;
+  stroke: currentColor;
+}
+
+button:hover,
+.premium-button:hover {
+  background: linear-gradient(135deg, #3b82f6, var(--cr-primary)) !important;
+  transform: translateY(-1px);
+  box-shadow: 0 13px 24px rgba(29, 78, 216, .24) !important;
+}
+
+input,
+select,
+textarea {
+  min-height: 38px;
+  padding-top: .65rem !important;
+  padding-bottom: .65rem !important;
+  font-size: .9rem !important;
+}
+
+label {
+  font-size: .82rem !important;
+}
+
+aside.glass-panel {
+  width: 16.5rem !important;
+  padding: 1rem !important;
+}
+
+aside.glass-panel button {
+  min-height: 36px;
+  padding: .58rem .75rem !important;
+  font-size: .82rem !important;
+}
+
+aside.glass-panel svg {
+  width: 1rem !important;
+  height: 1rem !important;
+}
+
+table {
+  font-size: .86rem !important;
+}
+
+table th,
+table td {
+  padding-top: .7rem !important;
+  padding-bottom: .7rem !important;
+}
+
+@media (max-width: 768px) {
+  body {
+    font-size: 13px;
+  }
+
+  .cr-start-logo {
+    width: min(210px, 74vw);
+  }
+
+  .text-4xl,
+  .text-5xl {
+    font-size: 1.85rem !important;
+  }
+
+  button,
+  .premium-button {
+    min-height: 40px;
+  }
+}

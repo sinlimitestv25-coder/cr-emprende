@@ -1950,11 +1950,9 @@ function LoginScreen({ email, setEmail, password, setPassword, error, onLogin })
       <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-[1.15fr_.85fr] rounded-[2.2rem] overflow-hidden glass-panel relative z-10 shadow-2xl shadow-blue-950/40 border border-white/10">
         <div className="p-7 md:p-10 bg-gradient-to-br from-sky-100 via-blue-50 to-emerald-50">
           <div className="flex justify-center">
-            <div className="relative inline-flex rounded-[1.5rem] bg-sky-50 px-5 py-3 shadow-2xl shadow-blue-600/15 border border-sky-200 overflow-hidden">
-              <img src="/logo-cr.png" alt="C&R Emprende" className="h-44 w-auto object-contain" />
-              <span className="absolute left-4 top-6 z-10 -rotate-[16deg] rounded-full bg-gradient-to-r from-fuchsia-500 via-sky-400 to-emerald-300 px-6 py-1.5 text-xl font-black uppercase tracking-[0.18em] text-white shadow-2xl shadow-fuchsia-900/35 ring-2 ring-white/80">
-                Emprende
-              </span>
+            <div className="cr-start-logo" aria-label="C&R Emprende">
+              <span className="cr-start-logo-main">C&R</span>
+              <span className="cr-start-logo-sub">emprende</span>
             </div>
           </div>
 
