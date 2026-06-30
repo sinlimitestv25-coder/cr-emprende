@@ -1052,39 +1052,34 @@ body {
   font-size: 14px;
 }
 
-.cr-start-logo {
-  width: min(260px, 72vw);
-  aspect-ratio: 1.72 / 1;
-  display: flex;
-  flex-direction: column;
+.cr-login-logo-card {
+  position: relative;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: .18rem;
   border-radius: 18px;
+  background: #ffffff;
+  border: 1px solid rgba(37, 99, 235, .16);
+  padding: .85rem 1rem;
+  box-shadow: 0 18px 36px rgba(29, 78, 216, .16);
+}
+
+.cr-login-emprende-badge {
+  position: absolute;
+  right: .75rem;
+  bottom: .75rem;
+  border-radius: 999px;
   background:
-    linear-gradient(145deg, #2563eb 0%, #1d4ed8 48%, #1e3a8a 100%);
+    linear-gradient(135deg, #2563eb, #1d4ed8);
   color: #ffffff;
-  box-shadow:
-    0 18px 36px rgba(29, 78, 216, .26),
-    inset 0 1px 0 rgba(255, 255, 255, .22);
-  border: 1px solid rgba(255, 255, 255, .18);
-}
-
-.cr-start-logo-main {
-  color: #ffffff;
-  font-size: clamp(3rem, 7vw, 5.4rem);
-  line-height: .88;
-  font-weight: 950;
-  letter-spacing: 0 !important;
-}
-
-.cr-start-logo-sub {
-  color: #ffffff;
-  font-size: clamp(1.2rem, 2.6vw, 2rem);
+  padding: .42rem .85rem;
+  font-size: clamp(.9rem, 1.8vw, 1.25rem);
   line-height: 1;
   font-weight: 900;
   text-transform: lowercase;
-  letter-spacing: .04em !important;
+  letter-spacing: .03em !important;
+  box-shadow: 0 10px 20px rgba(29, 78, 216, .24);
+  border: 1px solid rgba(255, 255, 255, .40);
 }
 
 .text-3xl {
@@ -1180,51 +1175,19 @@ body {
 }
 
 button,
-.premium-button,
-button.bg-blue-500,
-button.bg-blue-500\/10,
-button.bg-blue-500\/15,
-button.bg-blue-500\/20,
-button.bg-slate-800,
-button.bg-green-500,
-button.bg-emerald-500,
-button.bg-emerald-500\/15,
-button.bg-emerald-500\/20,
-button.bg-violet-500,
-button.bg-violet-500\/15,
-button.bg-violet-500\/20,
-button.bg-red-500,
-button.bg-red-500\/10,
-button.bg-red-500\/15,
-button.bg-red-500\/20,
-button.bg-orange-500,
-button.bg-amber-500,
-button.bg-gradient-to-r {
+.premium-button {
   min-height: 38px;
   border-radius: 10px !important;
-  background: linear-gradient(135deg, var(--cr-primary-soft), var(--cr-primary)) !important;
-  border: 1px solid rgba(30, 64, 175, .28) !important;
-  color: #ffffff !important;
   font-size: .86rem !important;
   font-weight: 850 !important;
   letter-spacing: 0 !important;
-  box-shadow: 0 10px 20px rgba(29, 78, 216, .18) !important;
-}
-
-button *,
-button svg,
-button .text-white,
-button .text-slate-950,
-button .text-black {
-  color: #ffffff !important;
-  stroke: currentColor;
+  box-shadow: 0 9px 18px rgba(15, 23, 42, .12) !important;
 }
 
 button:hover,
 .premium-button:hover {
-  background: linear-gradient(135deg, #3b82f6, var(--cr-primary)) !important;
   transform: translateY(-1px);
-  box-shadow: 0 13px 24px rgba(29, 78, 216, .24) !important;
+  box-shadow: 0 12px 22px rgba(15, 23, 42, .16) !important;
 }
 
 input,
@@ -1248,7 +1211,24 @@ aside.glass-panel {
 aside.glass-panel button {
   min-height: 36px;
   padding: .58rem .75rem !important;
+  background: linear-gradient(135deg, var(--cr-primary-soft), var(--cr-primary)) !important;
+  border: 1px solid rgba(30, 64, 175, .25) !important;
+  color: #ffffff !important;
   font-size: .82rem !important;
+  box-shadow: 0 9px 18px rgba(29, 78, 216, .16) !important;
+}
+
+aside.glass-panel button *,
+aside.glass-panel button svg {
+  color: #ffffff !important;
+  stroke: currentColor;
+}
+
+aside.glass-panel button:hover {
+  background: linear-gradient(135deg, #3b82f6, var(--cr-primary-dark)) !important;
+  color: #ffffff !important;
+  transform: translateY(-1px);
+  box-shadow: 0 12px 24px rgba(29, 78, 216, .24) !important;
 }
 
 aside.glass-panel svg {
@@ -1271,8 +1251,8 @@ table td {
     font-size: 13px;
   }
 
-  .cr-start-logo {
-    width: min(210px, 74vw);
+  .cr-login-logo-card img {
+    height: 8.25rem;
   }
 
   .text-4xl,

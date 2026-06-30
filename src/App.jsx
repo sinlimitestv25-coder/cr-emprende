@@ -1950,9 +1950,9 @@ function LoginScreen({ email, setEmail, password, setPassword, error, onLogin })
       <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-[1.15fr_.85fr] rounded-[2.2rem] overflow-hidden glass-panel relative z-10 shadow-2xl shadow-blue-950/40 border border-white/10">
         <div className="p-7 md:p-10 bg-gradient-to-br from-sky-100 via-blue-50 to-emerald-50">
           <div className="flex justify-center">
-            <div className="cr-start-logo" aria-label="C&R Emprende">
-              <span className="cr-start-logo-main">C&R</span>
-              <span className="cr-start-logo-sub">emprende</span>
+            <div className="cr-login-logo-card" aria-label="C&R Emprende">
+              <img src="/logo-cr.png" alt="C&R" className="h-40 w-auto object-contain" />
+              <span className="cr-login-emprende-badge">emprende</span>
             </div>
           </div>
 
