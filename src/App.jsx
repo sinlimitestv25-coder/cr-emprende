@@ -1541,8 +1541,9 @@ function SidebarBrand({ isAdmin, emp }) {
 
   if (isAdmin) {
     return (
-      <div className="mb-8 rounded-[1.5rem] bg-white p-4 shadow-2xl shadow-blue-600/20 border border-blue-500/10">
+      <div className="cr-sidebar-brand mb-8 rounded-[1.5rem] bg-white p-4 shadow-2xl shadow-blue-600/20 border border-blue-500/10">
         <img src="/logo-cr.png" alt="C&R Emprende" className="w-full max-h-36 object-contain" />
+        <span className="cr-sidebar-emprende">EMPRENDE</span>
       </div>
     );
   }
@@ -1952,7 +1953,7 @@ function LoginScreen({ email, setEmail, password, setPassword, error, onLogin })
           <div className="flex justify-center">
             <div className="cr-login-logo-card" aria-label="C&R Emprende">
               <img src="/logo-cr.png" alt="C&R" className="h-40 w-auto object-contain" />
-              <span className="cr-login-emprende-badge">emprende</span>
+              <span className="cr-login-emprende-badge">EMPRENDE</span>
             </div>
           </div>
 

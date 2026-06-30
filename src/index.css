@@ -1067,22 +1067,67 @@ body {
 .cr-login-emprende-badge {
   position: absolute;
   left: 50%;
-  bottom: .95rem;
-  width: 72%;
-  transform: translateX(-50%);
-  border-radius: 12px;
+  bottom: .68rem;
+  width: 78%;
+  transform: translateX(-50%) rotate(-3deg);
+  border-radius: 14px;
   background:
-    linear-gradient(135deg, #2563eb, #1d4ed8);
+    linear-gradient(135deg, #0ea5e9 0%, #2563eb 45%, #1e3a8a 100%);
   color: #ffffff;
-  padding: .48rem .9rem;
-  font-size: clamp(.95rem, 1.8vw, 1.2rem);
-  line-height: 1;
-  font-weight: 900;
+  padding: .56rem 1rem .6rem;
+  font-family: Georgia, "Times New Roman", ui-serif, serif;
+  font-size: clamp(1.08rem, 2.15vw, 1.55rem);
+  font-style: italic;
+  line-height: .95;
+  font-weight: 950;
   text-align: center;
-  text-transform: lowercase;
-  letter-spacing: .03em !important;
-  box-shadow: 0 10px 20px rgba(29, 78, 216, .24);
-  border: 1px solid rgba(255, 255, 255, .55);
+  text-transform: uppercase;
+  letter-spacing: .11em !important;
+  text-shadow: 0 2px 0 rgba(15, 23, 42, .24);
+  box-shadow:
+    0 14px 26px rgba(29, 78, 216, .32),
+    inset 0 1px 0 rgba(255, 255, 255, .38);
+  border: 2px solid rgba(255, 255, 255, .72);
+}
+
+.cr-login-emprende-badge::before,
+.cr-sidebar-emprende::before {
+  content: "";
+  position: absolute;
+  inset: 3px;
+  border-radius: inherit;
+  border: 1px solid rgba(255, 255, 255, .26);
+  pointer-events: none;
+}
+
+.cr-sidebar-brand {
+  position: relative;
+  overflow: visible;
+  padding-bottom: 1.65rem !important;
+}
+
+.cr-sidebar-emprende {
+  position: absolute;
+  left: 50%;
+  bottom: .48rem;
+  width: 74%;
+  transform: translateX(-50%) rotate(-2deg);
+  border-radius: 12px;
+  background: linear-gradient(135deg, #0ea5e9, #2563eb 52%, #1e3a8a);
+  color: #ffffff;
+  padding: .38rem .75rem .42rem;
+  font-family: Georgia, "Times New Roman", ui-serif, serif;
+  font-size: .98rem;
+  font-style: italic;
+  font-weight: 950;
+  line-height: 1;
+  text-align: center;
+  letter-spacing: .12em !important;
+  text-shadow: 0 2px 0 rgba(15, 23, 42, .24);
+  box-shadow:
+    0 10px 20px rgba(29, 78, 216, .28),
+    inset 0 1px 0 rgba(255, 255, 255, .38);
+  border: 2px solid rgba(255, 255, 255, .76);
 }
 
 .text-3xl {
@@ -1278,6 +1323,11 @@ table td {
 
   .cr-login-logo-card img {
     height: 8.25rem;
+  }
+
+  .cr-login-emprende-badge {
+    width: 82%;
+    font-size: 1rem;
   }
 
   .text-4xl,
