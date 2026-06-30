@@ -1979,8 +1979,10 @@ function LoginScreen({ email, setEmail, password, setPassword, error, onLogin })
           <div>
             <div className="w-16 h-16 rounded-3xl bg-gradient-to-br from-sky-400 via-blue-500 to-cyan-400 text-white flex items-center justify-center mb-4 shadow-xl shadow-blue-500/25"><LogIn className="w-8 h-8" /></div>
             <h2 className="text-3xl font-black text-white">Ingresar</h2>
-            <div className="mt-4 rounded-3xl border border-white/10 bg-white/8 p-4 shadow-inner shadow-slate-950/30">
-              <p className="text-sm font-bold uppercase tracking-[0.16em] text-cyan-200">Tu logo, tu negocio, tu control</p>
+            <div className="login-slogan-card mt-4">
+              <p className="login-slogan-main">Tu logo</p>
+              <p className="login-slogan-divider">tu negocio</p>
+              <p className="login-slogan-main">tu control</p>
             </div>
           </div>
           {error && <div className="rounded-2xl border border-red-400/20 bg-red-400/10 p-3 text-sm font-bold text-red-300">{error}</div>}
@@ -1989,7 +1991,7 @@ function LoginScreen({ email, setEmail, password, setPassword, error, onLogin })
           <div className="rounded-2xl border border-sky-300/20 bg-sky-500/10 p-4 shadow-inner shadow-sky-950/30">
             <p className="text-sm text-slate-100">Modo prototipo: los usuarios cargados entran con su email y contraseña temporal. El correo administrador de C&R entra al panel principal.</p>
           </div>
-          <Button type="submit" className="w-full rounded-2xl bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400 text-slate-950 hover:scale-[1.01] py-6 font-black uppercase tracking-[0.14em] shadow-xl shadow-emerald-950/30">INGRESAR</Button>
+          <Button type="submit" className="login-submit-button w-full">Ingresar</Button>
           <Button type="button" onClick={() => {
             if (typeof window !== "undefined") window.location.href = getDemoAccessUrl();
           }} className="w-full rounded-2xl bg-white/10 border border-white/15 text-white py-4">

@@ -1130,6 +1130,62 @@ body {
   border: 2px solid rgba(255, 255, 255, .76);
 }
 
+.login-slogan-card {
+  display: grid;
+  place-items: center;
+  gap: .12rem;
+  border-radius: 16px;
+  border: 1px solid rgba(125, 211, 252, .24);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .10), rgba(255, 255, 255, .055));
+  padding: 1rem .9rem;
+  text-align: center;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, .14),
+    0 14px 30px rgba(2, 6, 23, .18);
+}
+
+.login-slogan-main {
+  margin: 0;
+  color: #ffffff;
+  font-family: Georgia, "Times New Roman", ui-serif, serif;
+  font-size: clamp(1.15rem, 2.2vw, 1.55rem);
+  font-style: italic;
+  font-weight: 850;
+  line-height: 1.05;
+  letter-spacing: .02em !important;
+}
+
+.login-slogan-divider {
+  margin: .08rem 0;
+  color: #93c5fd;
+  font-size: .78rem;
+  font-weight: 950;
+  line-height: 1;
+  text-transform: uppercase;
+  letter-spacing: .20em !important;
+}
+
+.login-submit-button {
+  min-height: 46px;
+  border-radius: 12px !important;
+  background: linear-gradient(135deg, #2563eb, #1d4ed8) !important;
+  border: 1px solid rgba(147, 197, 253, .30) !important;
+  color: #ffffff !important;
+  padding: .85rem 1rem !important;
+  font-size: .95rem !important;
+  font-weight: 900 !important;
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+  box-shadow: 0 12px 24px rgba(29, 78, 216, .24) !important;
+}
+
+.login-submit-button:hover {
+  background: linear-gradient(135deg, #1d4ed8, #1e40af) !important;
+  color: #ffffff !important;
+  transform: translateY(-1px);
+}
+
 .text-3xl {
   font-size: 1.55rem !important;
 }
