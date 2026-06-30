@@ -2587,6 +2587,7 @@ function UsuariosPage({ usuarios, emprendimientos, onNewUser, onRenewUser, onCha
               <p className="text-sm text-slate-300 mt-1">Desde acá podés ver rubro, plan, estado de pago, renovar acceso y administrar contraseñas.</p>
             </div>
           </div>
+          <div className="admin-table-scroll">
           <table className="admin-data-table users-table w-full min-w-[1420px] text-[13px]">
             <thead>
               <tr className="text-left text-sky-300 border-b border-blue-500/20 bg-slate-950/60">
@@ -2616,7 +2617,12 @@ function UsuariosPage({ usuarios, emprendimientos, onNewUser, onRenewUser, onCha
                     <td className="py-2.5 pr-3 text-slate-100 whitespace-nowrap">{u.telefono || "Sin teléfono"}</td>
                     <td className="py-2.5 pr-3 text-slate-100 whitespace-nowrap">{u.email}</td>
                     <td className="py-2.5 pr-3 text-slate-100 whitespace-nowrap">{userRubro(u, emps)}</td>
-                    <td className="py-2.5 pr-3 flex items-center gap-2"><Badge>{u.plan || "Básico"}</Badge>{u.demo && <Badge>Demo</Badge>}</td>
+                    <td className="py-2.5 pr-3">
+                      <div className="flex items-center gap-2 whitespace-nowrap">
+                        <Badge>{u.plan || "Básico"}</Badge>
+                        {u.demo && <Badge>Demo</Badge>}
+                      </div>
+                    </td>
                     <td className="py-2.5 pr-3"><StatusBadge label={u.estadoPago || "Pendiente"} tone={paymentTone(u.estadoPago)} /></td>
                     <td className="py-2.5 pr-3 text-slate-100 whitespace-nowrap">{emps.map((e) => e.nombre).join(", ") || "Pendiente"}</td>
                     <td className="py-2.5 pr-3">
@@ -2665,6 +2671,7 @@ function UsuariosPage({ usuarios, emprendimientos, onNewUser, onRenewUser, onCha
               })}
             </tbody>
           </table>
+          </div>
         </CardContent>
       </Card>
 
@@ -2800,7 +2807,8 @@ function EmprendimientosPage({ emprendimientos, search, setSearch, onNewBusiness
       <Card>
         <CardContent className="p-5 overflow-x-auto">
           <TableToolbar title="Listado de emprendimientos" search={search} setSearch={setSearch} placeholder="Buscar por nombre, usuario, rubro o actividad..." />
-          <table className="admin-data-table ventures-table w-full text-sm min-w-[1180px]">
+          <div className="admin-table-scroll">
+          <table className="admin-data-table ventures-table w-full text-sm min-w-[1240px]">
             <TableHead headers={["ID", "Emprendimiento", "Usuario", "Rubro", "Plan / Pago", "Vencimiento", "Cuenta", "Portal", "Suspendido", "Acciones"]} />
             <tbody>
               {emprendimientos.map((e) => (
@@ -2842,6 +2850,7 @@ function EmprendimientosPage({ emprendimientos, search, setSearch, onNewBusiness
               ))}
             </tbody>
           </table>
+          </div>
         </CardContent>
       </Card>
 
@@ -3031,6 +3040,7 @@ function ConfiguracionAdminPage({ commissionSettings, onUpdateCommissionSettings
   function printDemoQr() {
     if (typeof window === "undefined") return;
     const qrUrl = getQrImageUrl(demoUrl, 420);
+    const logoUrl = `${window.location.origin}/logo-cr.png`;
     const printWindow = window.open("", "_blank", "width=760,height=900");
     if (!printWindow) {
       window.print();
@@ -3073,14 +3083,15 @@ function ConfiguracionAdminPage({ commissionSettings, onUpdateCommissionSettings
               align-items: center;
               gap: 8px;
             }
-            .brand-main {
-              font-size: 54px;
-              line-height: 1;
-              font-weight: 950;
-              color: #172033;
+            .brand-logo {
+              width: 245px;
+              max-height: 142px;
+              object-fit: contain;
+              display: block;
             }
             .brand-sub {
               display: inline-block;
+              margin-top: -26px;
               transform: rotate(-3deg);
               border-radius: 14px;
               background: linear-gradient(135deg, #0ea5e9, #2563eb 52%, #1e3a8a);
@@ -3126,12 +3137,6 @@ function ConfiguracionAdminPage({ commissionSettings, onUpdateCommissionSettings
               text-transform: uppercase;
               letter-spacing: .04em;
             }
-            .url {
-              max-width: 560px;
-              word-break: break-all;
-              color: #475569;
-              font-size: 13px;
-            }
             @page { size: A4; margin: 0; }
             @media print {
               body { min-height: auto; }
@@ -3142,14 +3147,13 @@ function ConfiguracionAdminPage({ commissionSettings, onUpdateCommissionSettings
         <body>
           <main class="sheet">
             <div class="brand">
-              <div class="brand-main">C&R</div>
+              <img class="brand-logo" src="${logoUrl}" alt="C&R Soluciones Digitales" />
               <div class="brand-sub">EMPRENDE</div>
             </div>
             <h1>Probá la demo y ordená tu emprendimiento desde hoy</h1>
             <img class="qr" src="${qrUrl}" alt="QR Demo C&R Emprende" />
             <p class="lead">Escaneá el QR, elegí tu rubro y entrá a una demo lista para usar.</p>
             <div class="callout">Productos · Ventas · Clientes · Finanzas</div>
-            <p class="url">${demoUrl}</p>
           </main>
           <script>
             window.onload = () => {
