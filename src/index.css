@@ -1316,6 +1316,85 @@ table td {
   padding-bottom: .7rem !important;
 }
 
+.admin-data-table {
+  border-collapse: separate;
+  border-spacing: 0 8px;
+  background: transparent;
+}
+
+.admin-data-table thead tr {
+  box-shadow: none !important;
+}
+
+.admin-data-table thead th {
+  padding: .75rem .8rem !important;
+  background: linear-gradient(180deg, #eef6ff, #dbeafe) !important;
+  color: #1e40af !important;
+  font-size: .76rem;
+  font-weight: 950;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  border-top: 1px solid rgba(37, 99, 235, .18);
+  border-bottom: 1px solid rgba(37, 99, 235, .18);
+}
+
+.admin-data-table thead th:first-child {
+  border-left: 1px solid rgba(37, 99, 235, .18);
+  border-radius: 14px 0 0 14px;
+}
+
+.admin-data-table thead th:last-child {
+  border-right: 1px solid rgba(37, 99, 235, .18);
+  border-radius: 0 14px 14px 0;
+}
+
+.admin-data-table tbody tr {
+  background: rgba(255, 255, 255, .86) !important;
+  border: 1px solid rgba(148, 163, 184, .26) !important;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, .055);
+}
+
+.admin-data-table tbody tr:nth-child(even) {
+  background: rgba(248, 250, 252, .96) !important;
+}
+
+.admin-data-table tbody tr:hover {
+  background: #eff6ff !important;
+  box-shadow: 0 12px 26px rgba(29, 78, 216, .10);
+}
+
+.admin-data-table tbody td {
+  padding: .82rem .8rem !important;
+  border-top: 1px solid rgba(148, 163, 184, .22);
+  border-bottom: 1px solid rgba(148, 163, 184, .22);
+  vertical-align: middle;
+}
+
+.admin-data-table tbody td:first-child {
+  border-left: 1px solid rgba(148, 163, 184, .22);
+  border-radius: 14px 0 0 14px;
+}
+
+.admin-data-table tbody td:last-child {
+  border-right: 1px solid rgba(148, 163, 184, .22);
+  border-radius: 0 14px 14px 0;
+}
+
+.admin-data-table .rounded-full,
+.admin-data-table span[class*="rounded-full"] {
+  box-shadow: 0 6px 14px rgba(15, 23, 42, .10);
+}
+
+.admin-data-table button {
+  min-height: 30px;
+  box-shadow: 0 6px 12px rgba(15, 23, 42, .10) !important;
+}
+
+.users-table tbody td:first-child p,
+.ventures-table tbody td:nth-child(3) p {
+  margin-top: .18rem;
+}
+
 @media (max-width: 768px) {
   body {
     font-size: 13px;

@@ -2587,7 +2587,7 @@ function UsuariosPage({ usuarios, emprendimientos, onNewUser, onRenewUser, onCha
               <p className="text-sm text-slate-300 mt-1">Desde acá podés ver rubro, plan, estado de pago, renovar acceso y administrar contraseñas.</p>
             </div>
           </div>
-          <table className="w-full min-w-[1420px] text-[13px]">
+          <table className="admin-data-table users-table w-full min-w-[1420px] text-[13px]">
             <thead>
               <tr className="text-left text-sky-300 border-b border-blue-500/20 bg-slate-950/60">
                 <UserTableHead icon={<Users />} label="Usuario" />
@@ -2608,7 +2608,7 @@ function UsuariosPage({ usuarios, emprendimientos, onNewUser, onRenewUser, onCha
                 const emps = getUserEmps(u);
                 const isVisible = !!visiblePasswords[u.id];
                 return (
-                  <tr key={u.id} className="border-b border-slate-800 hover:bg-slate-900/60 transition cursor-pointer" onClick={() => setSelectedUser(u)}>
+                <tr key={u.id} className="admin-table-row border-b border-slate-800 hover:bg-slate-900/60 transition cursor-pointer" onClick={() => setSelectedUser(u)}>
                     <td className="py-2.5 pr-3 font-bold text-white whitespace-nowrap">
                       {u.nombre}
                       <p className="text-xs text-sky-300">{u.id}</p>
@@ -2800,11 +2800,11 @@ function EmprendimientosPage({ emprendimientos, search, setSearch, onNewBusiness
       <Card>
         <CardContent className="p-5 overflow-x-auto">
           <TableToolbar title="Listado de emprendimientos" search={search} setSearch={setSearch} placeholder="Buscar por nombre, usuario, rubro o actividad..." />
-          <table className="w-full text-sm min-w-[1180px]">
+          <table className="admin-data-table ventures-table w-full text-sm min-w-[1180px]">
             <TableHead headers={["ID", "Emprendimiento", "Usuario", "Rubro", "Plan / Pago", "Vencimiento", "Cuenta", "Portal", "Suspendido", "Acciones"]} />
             <tbody>
               {emprendimientos.map((e) => (
-                <tr key={e.id} onClick={() => setSelected(e)} className="border-b border-slate-800 hover:bg-blue-500/5 cursor-pointer transition">
+                <tr key={e.id} onClick={() => setSelected(e)} className="admin-table-row border-b border-slate-800 hover:bg-blue-500/5 cursor-pointer transition">
                   <td className="py-3 pr-4 text-sky-300 font-bold whitespace-nowrap">{e.id}</td>
                   <td className="py-3 pr-4 min-w-48">
                     <p className="font-bold text-white">{e.nombre}</p>
@@ -3029,7 +3029,138 @@ function ConfiguracionAdminPage({ commissionSettings, onUpdateCommissionSettings
   }
 
   function printDemoQr() {
-    if (typeof window !== "undefined") window.print();
+    if (typeof window === "undefined") return;
+    const qrUrl = getQrImageUrl(demoUrl, 420);
+    const printWindow = window.open("", "_blank", "width=760,height=900");
+    if (!printWindow) {
+      window.print();
+      return;
+    }
+    printWindow.document.write(`
+      <!doctype html>
+      <html lang="es">
+        <head>
+          <meta charset="UTF-8" />
+          <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+          <title>QR Demo C&R Emprende</title>
+          <style>
+            * { box-sizing: border-box; }
+            body {
+              margin: 0;
+              min-height: 100vh;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              font-family: Inter, Arial, sans-serif;
+              background: #ffffff;
+              color: #172033;
+            }
+            .sheet {
+              width: 100%;
+              max-width: 720px;
+              min-height: 980px;
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              justify-content: center;
+              gap: 22px;
+              padding: 48px;
+              text-align: center;
+            }
+            .brand {
+              display: inline-flex;
+              flex-direction: column;
+              align-items: center;
+              gap: 8px;
+            }
+            .brand-main {
+              font-size: 54px;
+              line-height: 1;
+              font-weight: 950;
+              color: #172033;
+            }
+            .brand-sub {
+              display: inline-block;
+              transform: rotate(-3deg);
+              border-radius: 14px;
+              background: linear-gradient(135deg, #0ea5e9, #2563eb 52%, #1e3a8a);
+              color: #ffffff;
+              padding: 10px 28px 12px;
+              font-family: Georgia, "Times New Roman", serif;
+              font-size: 25px;
+              font-style: italic;
+              font-weight: 950;
+              letter-spacing: .12em;
+              text-shadow: 0 2px 0 rgba(15, 23, 42, .24);
+            }
+            h1 {
+              max-width: 560px;
+              margin: 10px 0 0;
+              font-size: 38px;
+              line-height: 1.05;
+              color: #1e3a8a;
+            }
+            .qr {
+              width: 420px;
+              height: 420px;
+              padding: 18px;
+              border: 4px solid #1d4ed8;
+              border-radius: 28px;
+              box-shadow: 0 18px 48px rgba(29, 78, 216, .18);
+            }
+            .lead {
+              max-width: 560px;
+              margin: 0;
+              font-size: 21px;
+              line-height: 1.35;
+              font-weight: 800;
+            }
+            .callout {
+              display: inline-block;
+              border-radius: 999px;
+              background: #dbeafe;
+              color: #1d4ed8;
+              padding: 12px 22px;
+              font-size: 18px;
+              font-weight: 950;
+              text-transform: uppercase;
+              letter-spacing: .04em;
+            }
+            .url {
+              max-width: 560px;
+              word-break: break-all;
+              color: #475569;
+              font-size: 13px;
+            }
+            @page { size: A4; margin: 0; }
+            @media print {
+              body { min-height: auto; }
+              .sheet { min-height: 100vh; }
+            }
+          </style>
+        </head>
+        <body>
+          <main class="sheet">
+            <div class="brand">
+              <div class="brand-main">C&R</div>
+              <div class="brand-sub">EMPRENDE</div>
+            </div>
+            <h1>Probá la demo y ordená tu emprendimiento desde hoy</h1>
+            <img class="qr" src="${qrUrl}" alt="QR Demo C&R Emprende" />
+            <p class="lead">Escaneá el QR, elegí tu rubro y entrá a una demo lista para usar.</p>
+            <div class="callout">Productos · Ventas · Clientes · Finanzas</div>
+            <p class="url">${demoUrl}</p>
+          </main>
+          <script>
+            window.onload = () => {
+              window.focus();
+              setTimeout(() => window.print(), 300);
+            };
+          </script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
   }
 
   const accountRules = [
