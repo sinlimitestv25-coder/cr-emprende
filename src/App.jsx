@@ -1980,9 +1980,8 @@ function LoginScreen({ email, setEmail, password, setPassword, error, onLogin })
             <div className="w-16 h-16 rounded-3xl bg-gradient-to-br from-sky-400 via-blue-500 to-cyan-400 text-white flex items-center justify-center mb-4 shadow-xl shadow-blue-500/25"><LogIn className="w-8 h-8" /></div>
             <h2 className="text-3xl font-black text-white">Ingresar</h2>
             <div className="login-slogan-card mt-4">
-              <p className="login-slogan-main">Tu logo</p>
-              <p className="login-slogan-divider">tu negocio</p>
-              <p className="login-slogan-main">tu control</p>
+              <p className="login-slogan-main">Tu logo, tu negocio, tu control</p>
+              <p className="login-slogan-divider">Identidad y gestión en un solo lugar</p>
             </div>
           </div>
           {error && <div className="rounded-2xl border border-red-400/20 bg-red-400/10 p-3 text-sm font-bold text-red-300">{error}</div>}
