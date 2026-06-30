@@ -1320,6 +1320,9 @@ table td {
   border-collapse: separate;
   border-spacing: 0 8px;
   background: transparent;
+  width: max-content !important;
+  min-width: 100%;
+  table-layout: auto;
 }
 
 .admin-table-scroll {
@@ -1360,6 +1363,7 @@ table td {
   letter-spacing: .04em;
   border-top: 1px solid rgba(37, 99, 235, .18);
   border-bottom: 1px solid rgba(37, 99, 235, .18);
+  white-space: nowrap;
 }
 
 .admin-data-table thead th:first-child {
@@ -1392,8 +1396,8 @@ table td {
   border-top: 1px solid rgba(148, 163, 184, .22);
   border-bottom: 1px solid rgba(148, 163, 184, .22);
   vertical-align: middle;
-  white-space: normal;
-  overflow-wrap: anywhere;
+  white-space: nowrap;
+  overflow-wrap: normal;
 }
 
 .admin-data-table tbody td:first-child {
@@ -1421,33 +1425,16 @@ table td {
   margin-top: .18rem;
 }
 
-.users-table tbody td:nth-child(1),
-.users-table tbody td:nth-child(2),
-.users-table tbody td:nth-child(3),
-.users-table tbody td:nth-child(5),
-.users-table tbody td:nth-child(8),
-.users-table tbody td:nth-child(9),
-.users-table tbody td:nth-child(10),
-.ventures-table tbody td:nth-child(1),
-.ventures-table tbody td:nth-child(5),
-.ventures-table tbody td:nth-child(6),
-.ventures-table tbody td:nth-child(7),
-.ventures-table tbody td:nth-child(8),
-.ventures-table tbody td:nth-child(9),
-.ventures-table tbody td:nth-child(10) {
-  white-space: nowrap;
-}
-
 .ventures-table tbody td:nth-child(2) {
-  min-width: 250px;
+  min-width: max-content;
 }
 
 .ventures-table tbody td:nth-child(3) {
-  min-width: 190px;
+  min-width: max-content;
 }
 
 .ventures-table tbody td:nth-child(4) {
-  min-width: 170px;
+  min-width: max-content;
 }
 
 @media (max-width: 768px) {

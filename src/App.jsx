@@ -3082,16 +3082,18 @@ function ConfiguracionAdminPage({ commissionSettings, onUpdateCommissionSettings
               flex-direction: column;
               align-items: center;
               gap: 8px;
+              position: relative;
             }
             .brand-logo {
-              width: 245px;
-              max-height: 142px;
+              width: 285px;
+              max-height: 165px;
               object-fit: contain;
               display: block;
             }
             .brand-sub {
               display: inline-block;
-              margin-top: -26px;
+              width: 235px;
+              margin-top: -48px;
               transform: rotate(-3deg);
               border-radius: 14px;
               background: linear-gradient(135deg, #0ea5e9, #2563eb 52%, #1e3a8a);
