@@ -581,6 +581,11 @@ function getDefaultPortalConfig(emp) {
   };
 }
 
+function isImageLogo(value) {
+  const logo = String(value || "").trim();
+  return logo.startsWith("/") || logo.startsWith("http") || logo.startsWith("data:") || logo.startsWith("blob:");
+}
+
 function buildPortalCache(emprendimientos, publicaciones, portalConfig) {
   const now = new Date().toISOString();
   return emprendimientos.reduce((acc, emp) => {
@@ -593,6 +598,7 @@ function buildPortalCache(emprendimientos, publicaciones, portalConfig) {
         rubro: emp.rubro,
         actividad: emp.actividad,
         logo: emp.logo,
+        logoMeta: emp.logoMeta || null,
         whatsapp: emp.whatsapp,
         instagram: emp.instagram,
         estado: accountStatusLabel(emp),
@@ -1375,7 +1381,7 @@ function App() {
   if (portalEmpIdFromUrl) {
     const livePortal = buildPortalCache(emprendimientos, publicaciones, portalConfig)[portalEmpIdFromUrl];
     const cachedPortal = portalCache[portalEmpIdFromUrl]
-      ? { ...portalCache[portalEmpIdFromUrl], emp: { ...portalCache[portalEmpIdFromUrl].emp, ...(livePortal?.emp || {}) } }
+      ? { ...(livePortal || {}), ...portalCache[portalEmpIdFromUrl], emp: { ...(livePortal?.emp || {}), ...portalCache[portalEmpIdFromUrl].emp } }
       : livePortal;
     return (
       <PortalPublico
@@ -1537,7 +1543,7 @@ function App() {
 }
 
 function SidebarBrand({ isAdmin, emp }) {
-  const isImageLogo = !isAdmin && emp?.logo && (emp.logo.startsWith("http") || emp.logo.startsWith("/") || emp.logo.startsWith("data:"));
+  const isImageLogoValue = !isAdmin && isImageLogo(emp?.logo);
 
   if (isAdmin) {
     return (
@@ -1551,7 +1557,7 @@ function SidebarBrand({ isAdmin, emp }) {
   return (
     <div className="mb-8 rounded-[2rem] bg-gradient-to-br from-slate-900 to-slate-950 border border-blue-500/25 p-5 text-center shadow-2xl shadow-blue-900/20">
       <div className="mx-auto h-36 w-36 rounded-[2rem] bg-blue-500/15 border border-blue-400/25 flex items-center justify-center overflow-hidden mb-4">
-        {isImageLogo ? <img src={emp.logo} alt={emp.nombre} className="h-full w-full object-cover" /> : <span className="text-5xl font-black text-sky-300">{emp?.logo || emp?.nombre?.slice(0,2) || "E"}</span>}
+        {isImageLogoValue ? <img src={emp.logo} alt={emp.nombre} className="h-full w-full object-cover" /> : <span className="text-5xl font-black text-sky-300">{emp?.logo || emp?.nombre?.slice(0,2) || "E"}</span>}
       </div>
       <p className="text-lg font-black text-white leading-tight">{emp?.nombre}</p>
     </div>
@@ -1609,7 +1615,7 @@ function MobileTopNav({ isAdmin, emp, activePage, setActivePage, currentUser, de
   const [isOpen, setIsOpen] = useState(false);
   const items = isAdmin ? adminMobileNavItems : clientMobileNavItems;
   const activeLabel = items.find(([id]) => id === activePage)?.[1] || "Panel";
-  const isImageLogo = !isAdmin && emp?.logo && (emp.logo.startsWith("http") || emp.logo.startsWith("/") || emp.logo.startsWith("data:"));
+  const isImageLogoValue = !isAdmin && isImageLogo(emp?.logo);
 
   function goToPage(pageId) {
     setActivePage(pageId);
@@ -1656,7 +1662,7 @@ function MobileTopNav({ isAdmin, emp, activePage, setActivePage, currentUser, de
             <div className="h-12 w-12 rounded-2xl bg-white border border-blue-500/20 flex items-center justify-center overflow-hidden shrink-0">
               {isAdmin ? (
                 <img src="/logo-cr.png" alt="C&R Emprende" className="h-10 w-10 object-contain" />
-              ) : isImageLogo ? (
+              ) : isImageLogoValue ? (
                 <img src={emp.logo} alt={emp.nombre} className="h-full w-full object-cover" />
               ) : (
                 <span className="text-sm font-black text-blue-950">{emp?.logo || "CR"}</span>
@@ -2103,7 +2109,7 @@ function PortalPublico({ emp, publicaciones, config, cacheInfo, onConsulta, onVi
     if (!emp) return;
     document.title = `${emp.nombre} | Portal C&R Emprende`;
     const description = config?.descripcion || getDefaultPortalConfig(emp).descripcion;
-    const image = emp.logo?.startsWith("data:") || emp.logo?.startsWith("http") || emp.logo?.startsWith("/") ? emp.logo : "/logo-cr.png";
+    const image = isImageLogo(emp.logo) ? emp.logo : "/logo-cr.png";
     [
       ["property", "og:title", emp.nombre],
       ["property", "og:description", description],
@@ -2187,7 +2193,7 @@ function PortalPublico({ emp, publicaciones, config, cacheInfo, onConsulta, onVi
               <span className="text-xs font-black uppercase tracking-[0.18em] text-sky-200">Emprende</span>
             </div>
             <div className="flex h-32 w-32 md:h-44 md:w-44 items-center justify-center overflow-hidden rounded-[2rem] border border-white/15 bg-white/12 text-4xl md:text-5xl font-black text-white">
-              {emp.logo?.startsWith("/") || emp.logo?.startsWith("http") || emp.logo?.startsWith("data:") ? <img src={emp.logo} alt={emp.nombre} className="h-full w-full object-cover" /> : emp.logo || emp.nombre.slice(0, 2)}
+              {isImageLogo(emp.logo) ? <img src={emp.logo} alt={emp.nombre} className="h-full w-full object-cover" /> : emp.logo || emp.nombre.slice(0, 2)}
             </div>
           </div>
           <div className="flex flex-col md:flex-row md:items-end md:justify-center gap-6 text-center">
