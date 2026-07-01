@@ -2090,6 +2090,8 @@ function DemoAccessScreen({ emprendimientos, onStartDemo, onBack }) {
 
 function PortalPublico({ emp, publicaciones, config, cacheInfo, onConsulta, onView }) {
   const [selectedPublication, setSelectedPublication] = useState(null);
+  const [expandedPublication, setExpandedPublication] = useState(null);
+  const [legalModal, setLegalModal] = useState(null);
   const [form, setForm] = useState({ nombre: "", whatsapp: "", mensaje: "" });
   const [sent, setSent] = useState(false);
 
@@ -2176,9 +2178,9 @@ function PortalPublico({ emp, publicaciones, config, cacheInfo, onConsulta, onVi
   const theme = getPortalTheme(config?.color);
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white">
-      <section className="relative min-h-[230px] overflow-hidden border-b border-white/10 px-5 py-4 md:px-10 md:py-6" style={{ backgroundImage: `linear-gradient(90deg, rgba(2,6,23,.88), ${theme.overlay}), url('${config?.bannerImage || "/fondo-saas.png"}')`, backgroundSize: "cover", backgroundPosition: "center" }}>
-        <div className="w-full">
+    <div className="portal-public min-h-screen bg-slate-950 text-white">
+      <section className="portal-hero relative overflow-hidden border-b border-white/10 px-4 py-5 md:px-8 md:py-7" style={{ backgroundImage: `linear-gradient(90deg, rgba(2,6,23,.86), ${theme.overlay}), url('${config?.bannerImage || "/fondo-saas.png"}')`, backgroundSize: "cover", backgroundPosition: "center" }}>
+        <div className="portal-hero-inner w-full">
           <div className="mb-6 flex items-center justify-between gap-4">
             <div className="inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-white/10 px-3 py-2">
               <img src="/logo-cr.png" alt="C&R Emprende" className="h-12 w-auto rounded bg-white/90 px-2" />
@@ -2205,15 +2207,17 @@ function PortalPublico({ emp, publicaciones, config, cacheInfo, onConsulta, onVi
       </section>
 
       <main className="w-full p-4 md:p-8 space-y-8">
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
+        <div className="portal-publication-grid grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
           {publicaciones.map((item) => (
-            <div key={item.id} className="overflow-hidden rounded-3xl border border-white/10 bg-slate-900 shadow-2xl shadow-black/30">
-              <PublicacionImage item={item} />
-              <div className="p-5 space-y-3">
+            <div key={item.id} className="portal-publication-card overflow-hidden rounded-3xl border border-white/10 bg-slate-900 shadow-2xl shadow-black/30">
+              <button type="button" className="portal-publication-image-button" onClick={() => setExpandedPublication(item)} aria-label={`Ampliar imagen de ${item.titulo}`}>
+                <PublicacionImage item={item} />
+              </button>
+              <div className="portal-publication-body p-5 space-y-3">
                 <p className="text-xs font-black uppercase tracking-wide text-sky-300">{item.categoria}</p>
                 <h2 className="text-xl font-black">{item.titulo}</h2>
-                <p className="text-sm text-slate-300">{item.descripcion}</p>
-                <div className="flex items-center justify-between gap-3">
+                <p className="portal-publication-description text-sm text-slate-300">{item.descripcion}</p>
+                <div className="portal-publication-footer flex items-center justify-between gap-3">
                   <p className="text-emerald-300 font-black">{item.precio ? money(item.precio) : "Consultar"}</p>
                   <Button type="button" onClick={() => openConsult(item)} className="bg-blue-500 text-black">Consultar</Button>
                 </div>
@@ -2222,10 +2226,48 @@ function PortalPublico({ emp, publicaciones, config, cacheInfo, onConsulta, onVi
           ))}
         </div>
         {!publicaciones.length && <div className="rounded-3xl border border-white/10 bg-slate-900 p-6 text-slate-300">Este portal todavía no tiene publicaciones visibles.</div>}
-        <div className="rounded-3xl border border-dashed border-slate-300 bg-white/80 p-6 text-center text-sm font-bold text-slate-500">
-          Espacio reservado para sponsors / publicidad
+        <div className="portal-reserved-slot rounded-3xl border border-dashed border-slate-300 bg-white/80 p-6 text-center text-sm font-bold text-slate-500">
+          Reservado
         </div>
       </main>
+
+      <footer className="portal-footer">
+        <Button type="button" onClick={() => setLegalModal("terms")} className="bg-slate-800 text-white">Terminos de uso</Button>
+        <Button type="button" onClick={() => setLegalModal("privacy")} className="bg-slate-800 text-white">Privacidad</Button>
+      </footer>
+
+      {expandedPublication && (
+        <div className="portal-image-modal" role="dialog" aria-modal="true" aria-label={`Imagen ampliada de ${expandedPublication.titulo}`}>
+          <button type="button" className="portal-modal-backdrop" onClick={() => setExpandedPublication(null)} aria-label="Cerrar imagen ampliada" />
+          <div className="portal-image-modal-panel">
+            <Button type="button" onClick={() => setExpandedPublication(null)} className="portal-modal-close bg-slate-800 text-white"><X className="w-4 h-4" /></Button>
+            <PublicacionImage item={expandedPublication} />
+            <div className="portal-image-caption">
+              <p>{expandedPublication.titulo}</p>
+              <span>{expandedPublication.precio ? money(expandedPublication.precio) : "Consultar"}</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {legalModal && (
+        <ModalShell eyebrow="C&R Emprende" title={legalModal === "terms" ? "Terminos de uso" : "Privacidad"} onClose={() => setLegalModal(null)}>
+          <div className="p-5 space-y-4 text-sm text-slate-100">
+            {legalModal === "terms" ? (
+              <>
+                <p>Este portal publica informacion comercial cargada por el emprendimiento. Los precios, disponibilidad y condiciones pueden variar y deben confirmarse antes de concretar una compra.</p>
+                <p>C&R Emprende provee la herramienta de exhibicion y gestion, pero la venta final se coordina directamente entre el cliente y el emprendimiento.</p>
+              </>
+            ) : (
+              <>
+                <p>Los datos enviados en una consulta se usan para que el emprendimiento pueda responder por WhatsApp y dar seguimiento al pedido solicitado.</p>
+                <p>No compartimos esos datos con terceros ajenos a la operacion del portal. El emprendimiento responsable administra sus consultas dentro de su panel.</p>
+              </>
+            )}
+            <Button type="button" onClick={() => setLegalModal(null)} className="w-full bg-blue-500 text-black">Entendido</Button>
+          </div>
+        </ModalShell>
+      )}
 
       {selectedPublication && (
         <ModalShell eyebrow="Consulta" title={selectedPublication.titulo} onClose={() => setSelectedPublication(null)}>
