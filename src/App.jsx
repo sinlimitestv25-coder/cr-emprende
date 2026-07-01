@@ -537,6 +537,7 @@ const exhibicionInicial = [
 ];
 
 const STORAGE_KEYS = {
+  emprendimientos: "cr-emprende-emprendimientos",
   publicaciones: "cr-emprende-publicaciones",
   consultasPortal: "cr-emprende-consultas-portal",
   portalConfig: "cr-emprende-portal-config",
@@ -572,6 +573,22 @@ function saveStoredValue(key, value) {
   } catch {
     // Local storage can fail in restricted browsing modes.
   }
+}
+
+function mergeStoredById(defaultItems, storedItems) {
+  if (!Array.isArray(storedItems)) return defaultItems;
+  const storedById = new Map(storedItems.map((item) => [item.id, item]));
+  const mergedDefaults = defaultItems.map((item) => ({ ...item, ...(storedById.get(item.id) || {}) }));
+  const defaultIds = new Set(defaultItems.map((item) => item.id));
+  const customItems = storedItems.filter((item) => item?.id && !defaultIds.has(item.id));
+  return [...customItems, ...mergedDefaults];
+}
+
+function loadStoredEmprendimientos() {
+  const cachedPortals = loadStoredValue(STORAGE_KEYS.portalCache, {});
+  const cachedEmps = Object.values(cachedPortals || {}).map((portal) => portal?.emp).filter(Boolean);
+  const withCachedPortalData = mergeStoredById(emprendimientosIniciales, cachedEmps);
+  return mergeStoredById(withCachedPortalData, loadStoredValue(STORAGE_KEYS.emprendimientos, withCachedPortalData));
 }
 
 function getDefaultPortalConfig(emp) {
@@ -914,7 +931,7 @@ function App() {
   const [currentUser, setCurrentUser] = useState(null);
   const [demoRemainingMs, setDemoRemainingMs] = useState(0);
   const [activePage, setActivePage] = useState(isSupportSession ? "mi-panel" : "dashboard");
-  const [emprendimientos, setEmprendimientos] = useState(emprendimientosIniciales);
+  const [emprendimientos, setEmprendimientos] = useState(loadStoredEmprendimientos);
   const [usuarios, setUsuarios] = useState(usuariosIniciales);
   const [rubros, setRubros] = useState(rubrosIniciales);
   const [planes] = useState(planesIniciales);
@@ -974,6 +991,10 @@ function App() {
   }, [currentUser, isAdmin, isLoggedIn]);
 
   useEffect(() => {
+    saveStoredValue(STORAGE_KEYS.emprendimientos, emprendimientos);
+  }, [emprendimientos]);
+
+  useEffect(() => {
     saveStoredValue(STORAGE_KEYS.publicaciones, publicaciones);
   }, [publicaciones]);
 
@@ -1008,6 +1029,9 @@ function App() {
   useEffect(() => {
     if (typeof window === "undefined") return undefined;
     function syncPortalStorage(event) {
+      if (event.key === STORAGE_KEYS.emprendimientos) {
+        setEmprendimientos(loadStoredEmprendimientos());
+      }
       if (event.key === STORAGE_KEYS.publicaciones) {
         setPublicaciones(loadStoredValue(STORAGE_KEYS.publicaciones, exhibicionInicial));
       }
